@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>India Live State Weather & Location DBMS</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    :root {
+      --bg-dark: #070a12;
+      --card-bg: rgba(18, 26, 43, 0.75);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --accent-orange: #ff7043;
+      --accent-cyan: #38bdf8;
+      --accent-purple: #a855f7;
+      --accent-green: #34d399;
+      --accent-amber: #fbbf24;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #171d33 0%, #070a12 85%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      padding: 16px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(7, 10, 18, 0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .flag-icon {
+      font-size: 2.2rem;
+      line-height: 1;
+    }
+
+    .brand-text h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #ff7043, #38bdf8, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .unit-toggle-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .unit-toggle-btn:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-dbms {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      border: none;
+      color: white;
+      padding: 8px 18px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+    }
+
+    .btn-dbms:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5);
+    }
+
+    .live-status {
+      background: rgba(52, 211, 153, 0.12);
+      border: 1px solid rgba(52, 211, 153, 0.35);
+      color: #34d399;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .live-status::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: #34d399;
+      border-radius: 50%;
+      animation: keyframePulseDot 1.6s infinite;
+    }
+
+    @keyframes keyframePulseDot {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+      70% { transform: scale(1.05); box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+    }
+
+    /* Main Grid Layout */
+    .app-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 24px;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .app-container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Sidebar: Locations List */
+    .sidebar {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 110px);
+      position: sticky;
+      top: 90px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar {
+        height: 380px;
+        position: relative;
+        top: 0;
+      }
+    }
+
+    .sidebar-header {
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sidebar-header h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .search-box input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px 14px 10px 38px;
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+      margin-bottom: 12px;
+      transition: all 0.3s ease;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-box::before {
+      content: '🔍';
+      position: absolute;
+      left: 12px;
+      top: 38%;
+      transform: translateY(-50%);
+      font-size: 0.85rem;
+      opacity: 0.6;
+    }
+
+    .states-list {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-right: 4px;
+    }
+
+    .states-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    .states-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    .state-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid transparent;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .state-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateX(4px);
+    }
+
+    .state-item.active {
+      background: linear-gradient(90deg, rgba(255, 112, 67, 0.25), rgba(56, 189, 248, 0.25));
+      border-color: var(--accent-cyan);
+    }
+
+    .state-item-name {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    .state-item-capital {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+    }
+
+    .tag-category {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-cyan);
+    }
+
+    /* Dashboard Layout */
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Map Card Container */
+    .map-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 18px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+
+    .map-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .map-card-header h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .map-mode-toggle {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mode-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text-sub);
+      padding: 5px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mode-btn.active, .mode-btn:hover {
+      background: var(--accent-cyan);
+      color: #000;
+      font-weight: 600;
+      border-color: var(--accent-cyan);
+    }
+
+    .leaflet-map-wrapper {
+      width: 100%;
+      height: 420px;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      position: relative;
+    }
+
+    #leafletMap {
+      width: 100%;
+      height: 100%;
+      background: #0d1322;
+    }
+
+    #googleMapFrame {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+    }
+
+    /* Map Click Picker Mode Notification */
+    .picker-banner {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 112, 67, 0.95);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 1000;
+      box-shadow: 0 4px 20px rgba(255, 112, 67, 0.5);
+      display: none;
+      animation: bounceBanner 0.6s infinite alternate ease-in-out;
+    }
+
+    @keyframes bounceBanner {
+      from { transform: translateX(-50%) translateY(0); }
+      to { transform: translateX(-50%) translateY(-5px); }
+    }
+
+    /* Custom Leaflet Pins */
+    .custom-keyframe-pin {
+      width: 18px;
+      height: 18px;
+      background: var(--accent-cyan);
+      border: 3px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 15px var(--accent-cyan);
+      animation: keyframePinPulse 1.8s infinite;
+    }
+
+    .custom-keyframe-pin.user-added {
+      background: var(--accent-orange);
+      box-shadow: 0 0 15px var(--accent-orange);
+    }
+
+    @keyframes keyframePinPulse {
+      0% { transform: scale(0.9); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(0.9); }
+    }
+
+    /* Weather Card */
+    .weather-display-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+
+    .weather-main-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .state-title-group h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .state-title-group p {
+      color: var(--accent-cyan);
+      font-size: 1.05rem;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+
+    .temp-section {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .temp-big {
+      font-size: 4.2rem;
+      font-weight: 800;
+      line-height: 1;
+      color: #fff;
+    }
+
+    .weather-icon-img {
+      width: 80px;
+      height: 80px;
+      filter: drop-shadow(0 4px 12px rgba(56, 189, 248, 0.4));
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .metric-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .metric-icon { font-size: 1.2rem; margin-bottom: 6px; }
+    .metric-title { font-size: 0.75rem; color: var(--text-sub); text-transform: uppercase; }
+    .metric-val { font-size: 1.2rem; font-weight: 700; color: #fff; margin-top: 4px; }
+
+    /* AQI Card Section */
+    .aqi-card {
+      margin-top: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .aqi-info h4 {
+      font-size: 0.95rem;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+    }
+
+    .aqi-badge {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #fff;
+    }
+
+    .aqi-good { background: #10b981; }
+    .aqi-fair { background: #84cc16; color: #000; }
+    .aqi-moderate { background: #f59e0b; color: #000; }
+    .aqi-poor { background: #ef4444; }
+    .aqi-verypoor { background: #8b5cf6; }
+
+    .aqi-pollutants {
+      display: flex;
+      gap: 12px;
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      flex-wrap: wrap;
+    }
+
+    .aqi-pollutants span {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    /* 5-Day Forecast Grid */
+    .forecast-container {
+      margin-top: 24px;
+    }
+
+    .forecast-header {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .forecast-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 14px;
+    }
+
+    .forecast-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 14px;
+      text-align: center;
+      transition: all 0.25s ease;
+    }
+
+    .forecast-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-3px);
+      border-color: var(--accent-cyan);
+    }
+
+    .forecast-date {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--accent-cyan);
+    }
+
+    .forecast-icon {
+      width: 50px;
+      height: 50px;
+      margin: 4px auto;
+    }
+
+    .forecast-temp {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .forecast-desc {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      text-transform: capitalize;
+      margin-top: 2px;
+    }
+
+    /* DBMS Modal Dialog */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 10, 18, 0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 950px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .modal-header h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .json-btn-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn-json {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-json:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-close {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1.1rem;
+    }
+
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .dbms-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 20px;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+    }
+
+    @media (max-width: 640px) {
+      .dbms-form-grid { grid-template-columns: 1fr; }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.82rem;
+      color: var(--text-sub);
+      font-weight: 500;
+    }
+
+    .form-group input, .form-group select, .form-group textarea {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-add-loc {
+      grid-column: span 2;
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: none;
+      color: white;
+      padding: 12px;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 640px) {
+      .btn-add-loc { grid-column: span 1; }
+    }
+
+    .btn-cancel-edit {
+      grid-column: span 2;
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      padding: 8px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: none;
+    }
+
+    .btn-pick-map {
+      background: rgba(255, 112, 67, 0.15);
+      border: 1px solid rgba(255, 112, 67, 0.4);
+      color: var(--accent-orange);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 4px;
+      align-self: flex-start;
+    }
+
+    /* Database Table */
+    .db-table-wrapper {
+      overflow-x: auto;
+      border-radius: 16px;
+      border: 1px solid var(--card-border);
+    }
+
+    table.db-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    table.db-table th {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 12px 16px;
+      color: var(--text-sub);
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    table.db-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    table.db-table tr:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .btn-table-action {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .btn-table-edit {
+      background: rgba(251, 191, 36, 0.15);
+      border: 1px solid rgba(251, 191, 36, 0.4);
+      color: var(--accent-amber);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      margin-right: 6px;
+    }
+
+    .btn-table-load {
+      background: rgba(56, 189, 248, 0.15);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: var(--accent-cyan);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      margin-right: 6px;
+    }
+
+    /* Toast Container */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 3000;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--accent-cyan);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 14px;
+      font-size: 0.88rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastIn 0.3s ease forwards;
+      pointer-events: auto;
+    }
+
+    .toast.error {
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+
+    .toast.success {
+      border-color: #34d399;
+      color: #a7f3d0;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <span class="flag-icon">🇮🇳</span>
+      <div class="brand-text">
+        <h1>India Weather & Location DBMS</h1>
+        <p>Interactive Map & Persistent Custom Location Database</p>
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      <button class="unit-toggle-btn" id="unitToggleBtn" onclick="toggleTempUnit()">°C Units</button>
+      <div style="font-size:0.85rem; color:#cbd5e1; background:rgba(255,255,255,0.08); padding:6px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.15);">
+        👤 <span id="currentUserLabel">User</span>
+      </div>
+      <button class="btn-dbms" onclick="openDbmsModal()">🗄️ DBMS Manager</button>
+      <button style="background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; padding:6px 14px; border-radius:12px; font-size:0.82rem; cursor:pointer;" onclick="logoutUser()">Logout</button>
+      <div class="live-status">Live API Active</div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h2>Saved Locations</h2>
+        <span style="font-size:0.75rem; color:var(--accent-cyan);" id="locCountBadge">30 Locations</span>
+      </div>
+
+      <div class="search-box">
+        <input type="text" id="stateSearchInput" placeholder="Search saved location..." onkeyup="filterLocations()">
+      </div>
+
+      <div class="states-list" id="locationsListContainer"></div>
+    </div>
+
+    <!-- Dashboard -->
+    <div class="dashboard">
+
+      <!-- Map Card -->
+      <div class="map-card">
+        <div class="map-card-header">
+          <h3>🗺️ Interactive Map of India</h3>
+          <div class="map-mode-toggle">
+            <button class="mode-btn active" id="btnDarkMap" onclick="switchMapMode('leaflet')">Dark Vector Map</button>
+            <button class="mode-btn" id="btnSatMap" onclick="switchMapMode('google')">Google Satellite</button>
+          </div>
+        </div>
+
+        <div class="leaflet-map-wrapper">
+          <div id="pickerBanner" class="picker-banner">📍 Click anywhere on the map to select coordinates!</div>
+          <div id="leafletMap"></div>
+          <iframe id="googleMapFrame" src="about:blank"></iframe>
+        </div>
+      </div>
+
+      <!-- Weather Glass Card -->
+      <div class="weather-display-card" id="weatherDisplayCard">
+        <div class="weather-main-row">
+          <div class="state-title-group">
+            <h2 id="dispStateName">Mumbai</h2>
+            <p id="dispCapitalName">State: Maharashtra, India</p>
+            <div style="font-size: 0.85rem; color: var(--text-sub); margin-top: 6px;" id="dispCoords">Lat: 19.0760 | Lon: 72.8777</div>
+          </div>
+
+          <div class="temp-section">
+            <img id="dispIcon" class="weather-icon-img" src="https://openweathermap.org/img/wn/02d@2x.png" alt="weather icon">
+            <div>
+              <div class="temp-big" id="dispTemp">28°C</div>
+              <div style="font-size: 1.1rem; color: var(--accent-cyan); font-weight: 500; text-transform: capitalize;" id="dispCondition">Scattered Clouds</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-icon">🌡️</div>
+            <div class="metric-title">Feels Like</div>
+            <div class="metric-val" id="valFeels">31°C</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon">💧</div>
+            <div class="metric-title">Humidity</div>
+            <div class="metric-val" id="valHumidity">78%</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon">💨</div>
+            <div class="metric-title">Wind Speed</div>
+            <div class="metric-val" id="valWind">4.6 m/s</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon">⏲️</div>
+            <div class="metric-title">Pressure</div>
+            <div class="metric-val" id="valPressure">1008 hPa</div>
+          </div>
+        </div>
+
+        <!-- Air Quality Index (AQI) Card -->
+        <div class="aqi-card" id="aqiCard">
+          <div class="aqi-info">
+            <h4>Air Quality Index (AQI)</h4>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:4px;">
+              <span class="aqi-badge aqi-good" id="aqiBadge">1 - Good</span>
+              <span style="font-size:0.82rem; color:var(--text-sub);" id="aqiDesc">Air quality is considered satisfactory.</span>
+            </div>
+          </div>
+          <div class="aqi-pollutants" id="aqiPollutants">
+            <span>PM2.5: --</span>
+            <span>PM10: --</span>
+            <span>NO2: --</span>
+            <span>O3: --</span>
+          </div>
+        </div>
+
+        <!-- 5-Day Weather Forecast -->
+        <div class="forecast-container">
+          <div class="forecast-header">📅 5-Day Weather Forecast</div>
+          <div class="forecast-grid" id="forecastGrid">
+            <!-- Forecast cards rendered dynamically -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- DBMS Location Manager Modal -->
+  <div class="modal-overlay" id="dbmsModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>🗄️ Location Database Management System (DBMS)</h2>
+        <div class="json-btn-group">
+          <button class="btn-json" onclick="exportToJson()">📥 Export JSON</button>
+          <button class="btn-json" onclick="triggerImportJson()">📤 Import JSON</button>
+          <input type="file" id="importJsonInput" accept=".json" style="display:none;" onchange="handleImportJson(event)">
+          <button class="btn-close" onclick="closeDbmsModal()">&times;</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        
+        <!-- Add / Edit Location Form -->
+        <div class="dbms-form-grid" id="dbmsFormGrid">
+          <h3 style="grid-column: span 2; font-size:1.05rem; color:#fff;" id="formHeaderTitle">➕ Add New Custom Location Record</h3>
+
+          <!-- Auto Geocode Helper -->
+          <div class="form-group" style="grid-column: span 2; background:rgba(255,255,255,0.03); padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.08);">
+            <label style="color:var(--accent-cyan);">🔍 Auto-Fetch Coordinates by City Name</label>
+            <div style="display:flex; gap:8px; margin-top:4px;">
+              <input type="text" id="autoGeoQuery" placeholder="Type any city (e.g. Manali, London, Tokyo)..." style="flex:1;">
+              <button style="background:var(--accent-cyan); color:#000; border:none; padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer;" onclick="autoGeocode()">Find Coords</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Location / City Name *</label>
+            <input type="text" id="newLocName" placeholder="e.g. Manali, Cochin Port, Home">
+          </div>
+
+          <div class="form-group">
+            <label>State / Region *</label>
+            <input type="text" id="newLocState" placeholder="e.g. Himachal Pradesh">
+          </div>
+
+          <div class="form-group">
+            <label>Latitude *</label>
+            <input type="number" step="any" id="newLocLat" placeholder="e.g. 32.2432">
+          </div>
+
+          <div class="form-group">
+            <label>Longitude *</label>
+            <input type="number" step="any" id="newLocLon" placeholder="e.g. 77.1892">
+          </div>
+
+          <button class="btn-pick-map" onclick="enableMapPicker()">📍 Pick Coordinates from Map Click</button>
+
+          <div class="form-group">
+            <label>Category</label>
+            <select id="newLocCategory">
+              <option value="Custom Base">Custom Base</option>
+              <option value="Tourist Spot">Tourist Spot</option>
+              <option value="Hill Station">Hill Station</option>
+              <option value="Coastal">Coastal</option>
+              <option value="IT Hub">IT Hub</option>
+              <option value="Capital">Capital</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="grid-column: span 2;">
+            <label>Description / Notes</label>
+            <input type="text" id="newLocNotes" placeholder="Optional notes for this weather monitoring point...">
+          </div>
+
+          <button class="btn-add-loc" id="btnSaveLoc" onclick="saveNewLocation()">💾 Save Location to Database</button>
+          <button class="btn-cancel-edit" id="btnCancelEdit" onclick="cancelEditMode()">✖️ Cancel Editing</button>
+        </div>
+
+        <!-- Database Table View -->
+        <div>
+          <h3 style="font-size:1.05rem; color:#fff; margin-bottom: 12px;">📊 Stored Location Records</h3>
+          <div class="db-table-wrapper">
+            <table class="db-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>State</th>
+                  <th>Category</th>
+                  <th>Coordinates</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="dbTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // Auth Guard
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+      window.location.href = 'login.html';
+    }
+    const currentUser = localStorage.getItem('currentUser') || 'User';
+
+    function logoutUser() {
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('currentUser');
+      alert('You have logged out successfully.');
+      window.location.href = 'login.html';
+    }
+
+    const apiKey = 'eb54a61865a9338c289d39b7cc5e19f0';
+
+    const defaultSeedLocations = [
+      { id: '1', name: "Mumbai", state: "Maharashtra", lat: 19.0760, lon: 72.8777, category: "Financial Hub", notes: "Maharashtra Capital" },
+      { id: '2', name: "New Delhi", state: "Delhi", lat: 28.6139, lon: 77.2090, category: "Capital", notes: "National Capital" },
+      { id: '3', name: "Bengaluru", state: "Karnataka", lat: 12.9716, lon: 77.5946, category: "IT Hub", notes: "Silicon Valley of India" },
+      { id: '4', name: "Chennai", state: "Tamil Nadu", lat: 13.0827, lon: 80.2707, category: "Coastal", notes: "Tamil Nadu Capital" },
+      { id: '5', name: "Kolkata", state: "West Bengal", lat: 22.5726, lon: 88.3639, category: "Cultural Hub", notes: "City of Joy" },
+      { id: '6', name: "Jaipur", state: "Rajasthan", lat: 26.9124, lon: 75.7873, category: "Heritage", notes: "Pink City" },
+      { id: '7', name: "Panaji", state: "Goa", lat: 15.4989, lon: 73.8278, category: "Coastal", notes: "Beach Resort" },
+      { id: '8', name: "Shimla", state: "Himachal Pradesh", lat: 31.1048, lon: 77.1734, category: "Hill Station", notes: "Popular Hill Station" }
+    ];
+
+    let dbLocations = [];
+    let map;
+    let mapMarkers = [];
+    let currentLocation = null;
+    let isMapPickerActive = false;
+    let editingLocId = null;
+    let isFahrenheit = false;
+    let rawWeatherData = null;
+    let rawForecastData = null;
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `${type === 'success' ? '✅' : '⚠️'} ${message}`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function toggleTempUnit() {
+      isFahrenheit = !isFahrenheit;
+      document.getElementById('unitToggleBtn').textContent = isFahrenheit ? '°F Units' : '°C Units';
+      showToast(`Switched temperature display to ${isFahrenheit ? 'Fahrenheit (°F)' : 'Celsius (°C)'}`);
+      if (rawWeatherData) updateWeatherUI(rawWeatherData);
+      if (rawForecastData) updateForecastUI(rawForecastData);
+    }
+
+    function formatTemp(celsius) {
+      if (celsius === undefined || celsius === null) return '--';
+      if (isFahrenheit) {
+        return `${Math.round((celsius * 9/5) + 32)}°F`;
+      }
+      return `${Math.round(celsius)}°C`;
+    }
+
+    // Load Database (from LocalStorage or Server API)
+    async function loadDatabase() {
+      try {
+        const res = await fetch('/api/locations');
+        if (res.ok) {
+          dbLocations = await res.json();
+        } else {
+          throw new Error('API server unavailable');
+        }
+      } catch (err) {
+        const localData = localStorage.getItem('weather_dbms_locations');
+        if (localData) {
+          dbLocations = JSON.parse(localData);
+        } else {
+          dbLocations = defaultSeedLocations;
+          saveToLocalStorage();
+        }
+      }
+
+      renderSidebar();
+      renderDbTable();
+      updateMapPins();
+
+      if (dbLocations.length > 0) {
+        selectLocation(dbLocations[0]);
+      }
+    }
+
+    function saveToLocalStorage() {
+      localStorage.setItem('weather_dbms_locations', JSON.stringify(dbLocations));
+    }
+
+    // Initialize Map
+    function initMap() {
+      map = L.map('leafletMap', { zoomControl: false }).setView([20.5937, 78.9629], 5);
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO'
+      }).addTo(map);
+
+      map.on('click', (e) => {
+        if (isMapPickerActive) {
+          document.getElementById('newLocLat').value = e.latlng.lat.toFixed(4);
+          document.getElementById('newLocLon').value = e.latlng.lng.toFixed(4);
+          disableMapPicker();
+          openDbmsModal();
+          showToast(`Selected map coordinates: ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}`);
+        }
+      });
+    }
+
+    // Update Map Pins
+    function updateMapPins() {
+      if (!map) return;
+      mapMarkers.forEach(m => map.removeLayer(m));
+      mapMarkers = [];
+
+      dbLocations.forEach(loc => {
+        const customIcon = L.divIcon({
+          className: 'custom-pin-container',
+          html: `<div class="custom-keyframe-pin ${loc.id > 100 ? 'user-added' : ''}"></div>`,
+          iconSize: [18, 18]
+        });
+
+        const m = L.marker([loc.lat, loc.lon], { icon: customIcon }).addTo(map);
+        m.bindTooltip(`<b>${loc.name}</b><br><small>${loc.state}</small>`);
+        m.on('click', () => selectLocation(loc));
+        mapMarkers.push(m);
+      });
+    }
+
+    // Render Sidebar List
+    function renderSidebar() {
+      const container = document.getElementById('locationsListContainer');
+      container.innerHTML = '';
+
+      document.getElementById('locCountBadge').textContent = `${dbLocations.length} Saved Locations`;
+
+      dbLocations.forEach(loc => {
+        const item = document.createElement('div');
+        item.className = `state-item ${currentLocation && currentLocation.id === loc.id ? 'active' : ''}`;
+        item.innerHTML = `
+          <div>
+            <div class="state-item-name">${loc.name}</div>
+            <div class="state-item-capital">${loc.state}</div>
+          </div>
+          <span class="tag-category">${loc.category || 'Location'}</span>
+        `;
+        item.onclick = () => selectLocation(loc);
+        container.appendChild(item);
+      });
+    }
+
+    // Select Location
+    function selectLocation(loc) {
+      currentLocation = loc;
+
+      document.querySelectorAll('.state-item').forEach(el => {
+        const nameEl = el.querySelector('.state-item-name');
+        if (nameEl && nameEl.textContent === loc.name) {
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+        }
+      });
+
+      document.getElementById('dispStateName').textContent = loc.name;
+      document.getElementById('dispCapitalName').textContent = `State: ${loc.state || 'India'}, India`;
+      document.getElementById('dispCoords').textContent = `Lat: ${parseFloat(loc.lat).toFixed(4)} | Lon: ${parseFloat(loc.lon).toFixed(4)}`;
+
+      if (map) {
+        map.flyTo([loc.lat, loc.lon], 7, { animate: true, duration: 1.2 });
+      }
+
+      fetchWeather(loc.lat, loc.lon);
+    }
+
+    // Fetch Weather, AQI, and 5-Day Forecast
+    async function fetchWeather(lat, lon) {
+      const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+      const aqiUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+
+      // Fetch Current Weather
+      try {
+        const response = await fetch(weatherUrl);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        rawWeatherData = data;
+        updateWeatherUI(data);
+      } catch (err) {
+        console.error('Weather error:', err);
+        showToast(`Weather API Error: ${err.message}`, 'error');
+      }
+
+      // Fetch AQI
+      try {
+        const aqiRes = await fetch(aqiUrl);
+        if (aqiRes.ok) {
+          const aqiData = await aqiRes.json();
+          updateAqiUI(aqiData);
+        }
+      } catch (err) {
+        console.error('AQI Error:', err);
+      }
+
+      // Fetch 5-Day Forecast
+      try {
+        const fcRes = await fetch(forecastUrl);
+        if (fcRes.ok) {
+          const fcData = await fcRes.json();
+          rawForecastData = fcData;
+          updateForecastUI(fcData);
+        }
+      } catch (err) {
+        console.error('Forecast Error:', err);
+      }
+    }
+
+    function updateWeatherUI(data) {
+      document.getElementById('dispTemp').textContent = formatTemp(data.main.temp);
+      document.getElementById('dispCondition').textContent = data.weather[0].description;
+      document.getElementById('dispIcon').src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+      document.getElementById('valFeels').textContent = formatTemp(data.main.feels_like);
+      document.getElementById('valHumidity').textContent = `${data.main.humidity}%`;
+      document.getElementById('valWind').textContent = `${data.wind.speed} m/s`;
+      document.getElementById('valPressure').textContent = `${data.main.pressure} hPa`;
+    }
+
+    function updateAqiUI(aqiData) {
+      if (!aqiData.list || !aqiData.list[0]) return;
+      const main = aqiData.list[0].main;
+      const comp = aqiData.list[0].components;
+      const aqi = main.aqi;
+
+      const badge = document.getElementById('aqiBadge');
+      const desc = document.getElementById('aqiDesc');
+
+      badge.className = 'aqi-badge';
+      if (aqi === 1) {
+        badge.classList.add('aqi-good');
+        badge.textContent = '1 - Good 🟢';
+        desc.textContent = 'Air quality is satisfactory and poses little risk.';
+      } else if (aqi === 2) {
+        badge.classList.add('aqi-fair');
+        badge.textContent = '2 - Fair 🟡';
+        desc.textContent = 'Air quality is acceptable for most individuals.';
+      } else if (aqi === 3) {
+        badge.classList.add('aqi-moderate');
+        badge.textContent = '3 - Moderate 🟧';
+        desc.textContent = 'Sensitive groups may experience health effects.';
+      } else if (aqi === 4) {
+        badge.classList.add('aqi-poor');
+        badge.textContent = '4 - Poor 🔴';
+        desc.textContent = 'Unhealthy air pollution level for sensitive groups.';
+      } else {
+        badge.classList.add('aqi-verypoor');
+        badge.textContent = '5 - Very Poor 🟣';
+        desc.textContent = 'Health warning: serious risk of air pollution.';
+      }
+
+      document.getElementById('aqiPollutants').innerHTML = `
+        <span>PM2.5: ${comp.pm2_5.toFixed(1)} µg/m³</span>
+        <span>PM10: ${comp.pm10.toFixed(1)} µg/m³</span>
+        <span>NO2: ${comp.no2.toFixed(1)} µg/m³</span>
+        <span>O3: ${comp.o3.toFixed(1)} µg/m³</span>
+      `;
+    }
+
+    function updateForecastUI(fcData) {
+      const container = document.getElementById('forecastGrid');
+      container.innerHTML = '';
+      if (!fcData.list) return;
+
+      const dailyPoints = fcData.list.filter(item => item.dt_txt.includes('12:00:00')).slice(0, 5);
+
+      dailyPoints.forEach(day => {
+        const dateObj = new Date(day.dt * 1000);
+        const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+        const card = document.createElement('div');
+        card.className = 'forecast-card';
+        card.innerHTML = `
+          <div class="forecast-date">${dayName}</div>
+          <img class="forecast-icon" src="https://openweathermap.org/img/wn/${day.weather[0].icon}@2x.png" alt="icon">
+          <div class="forecast-temp">${formatTemp(day.main.temp)}</div>
+          <div class="forecast-desc">${day.weather[0].description}</div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Auto Geocode Helper
+    async function autoGeocode() {
+      const q = document.getElementById('autoGeoQuery').value.trim();
+      if (!q) {
+        showToast('Please type a city name to search!', 'error');
+        return;
+      }
+      try {
+        const res = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=1&appid=${apiKey}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            document.getElementById('newLocName').value = data[0].name;
+            document.getElementById('newLocState').value = data[0].state || data[0].country || 'Global';
+            document.getElementById('newLocLat').value = data[0].lat.toFixed(4);
+            document.getElementById('newLocLon').value = data[0].lon.toFixed(4);
+            showToast(`Found coordinates for ${data[0].name}: ${data[0].lat.toFixed(4)}, ${data[0].lon.toFixed(4)}`);
+            return;
+          }
+        }
+        throw new Error('City not found');
+      } catch (err) {
+        showToast(`Could not find coordinates for "${q}". Try another location.`, 'error');
+      }
+    }
+
+    // Add / Edit Location
+    async function saveNewLocation() {
+      const name = document.getElementById('newLocName').value.trim();
+      const state = document.getElementById('newLocState').value.trim();
+      const lat = parseFloat(document.getElementById('newLocLat').value);
+      const lon = parseFloat(document.getElementById('newLocLon').value);
+      const category = document.getElementById('newLocCategory').value;
+      const notes = document.getElementById('newLocNotes').value.trim();
+
+      if (!name || isNaN(lat) || isNaN(lon)) {
+        showToast('Please fill required fields (Name, Lat, Lon)!', 'error');
+        return;
+      }
+
+      if (editingLocId) {
+        // UPDATE existing location
+        const updatePayload = { name, state, lat, lon, category, notes };
+        try {
+          const res = await fetch(`/api/locations/${editingLocId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatePayload)
+          });
+          if (res.ok) {
+            const updated = await res.json();
+            const idx = dbLocations.findIndex(l => l.id === editingLocId);
+            if (idx !== -1) dbLocations[idx] = updated;
+          } else {
+            throw new Error('API server failed');
+          }
+        } catch (err) {
+          const idx = dbLocations.findIndex(l => l.id === editingLocId);
+          if (idx !== -1) dbLocations[idx] = { ...dbLocations[idx], ...updatePayload };
+          saveToLocalStorage();
+        }
+        showToast(`Updated location: ${name}`);
+        cancelEditMode();
+      } else {
+        // ADD new location
+        const newLoc = { id: Date.now().toString(), name, state, lat, lon, category, notes };
+        try {
+          const res = await fetch('/api/locations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newLoc)
+          });
+          if (res.ok) {
+            const saved = await res.json();
+            dbLocations.unshift(saved);
+          } else {
+            dbLocations.unshift(newLoc);
+            saveToLocalStorage();
+          }
+        } catch (err) {
+          dbLocations.unshift(newLoc);
+          saveToLocalStorage();
+        }
+        showToast(`Added new location: ${name}`);
+        selectLocation(newLoc);
+      }
+
+      resetForm();
+      renderSidebar();
+      renderDbTable();
+      updateMapPins();
+      closeDbmsModal();
+    }
+
+    function editLocation(id) {
+      const loc = dbLocations.find(l => l.id === id);
+      if (!loc) return;
+
+      editingLocId = id;
+      document.getElementById('formHeaderTitle').textContent = `✏️ Edit Location: ${loc.name}`;
+      document.getElementById('newLocName').value = loc.name;
+      document.getElementById('newLocState').value = loc.state || '';
+      document.getElementById('newLocLat').value = loc.lat;
+      document.getElementById('newLocLon').value = loc.lon;
+      document.getElementById('newLocCategory').value = loc.category || 'Custom Base';
+      document.getElementById('newLocNotes').value = loc.notes || '';
+
+      document.getElementById('btnSaveLoc').textContent = '💾 Update Location Record';
+      document.getElementById('btnCancelEdit').style.display = 'block';
+
+      document.getElementById('dbmsFormGrid').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function cancelEditMode() {
+      editingLocId = null;
+      document.getElementById('formHeaderTitle').textContent = '➕ Add New Custom Location Record';
+      document.getElementById('btnSaveLoc').textContent = '💾 Save Location to Database';
+      document.getElementById('btnCancelEdit').style.display = 'none';
+      resetForm();
+    }
+
+    function resetForm() {
+      document.getElementById('newLocName').value = '';
+      document.getElementById('newLocState').value = '';
+      document.getElementById('newLocLat').value = '';
+      document.getElementById('newLocLon').value = '';
+      document.getElementById('newLocNotes').value = '';
+      document.getElementById('autoGeoQuery').value = '';
+    }
+
+    // Delete Location
+    async function deleteLocation(id) {
+      const loc = dbLocations.find(l => l.id === id);
+      if (!confirm(`Are you sure you want to delete "${loc ? loc.name : 'this location'}"?`)) return;
+
+      try {
+        await fetch(`/api/locations/${id}`, { method: 'DELETE' });
+      } catch (err) {}
+
+      dbLocations = dbLocations.filter(l => l.id !== id);
+      saveToLocalStorage();
+
+      showToast(`Deleted location record`, 'error');
+      renderSidebar();
+      renderDbTable();
+      updateMapPins();
+    }
+
+    // Render DB Table
+    function renderDbTable() {
+      const tbody = document.getElementById('dbTableBody');
+      tbody.innerHTML = '';
+
+      dbLocations.forEach(loc => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="font-weight:600; color:#fff;">${loc.name}</td>
+          <td>${loc.state || 'India'}</td>
+          <td><span class="tag-category">${loc.category || 'N/A'}</span></td>
+          <td style="font-family:monospace;">${parseFloat(loc.lat).toFixed(4)}, ${parseFloat(loc.lon).toFixed(4)}</td>
+          <td style="color:var(--text-sub);">${loc.notes || '-'}</td>
+          <td>
+            <button class="btn-table-load" onclick="selectLocationById('${loc.id}')">Load</button>
+            <button class="btn-table-edit" onclick="editLocation('${loc.id}')">Edit</button>
+            <button class="btn-table-action" onclick="deleteLocation('${loc.id}')">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function selectLocationById(id) {
+      const loc = dbLocations.find(l => l.id === id);
+      if (loc) {
+        selectLocation(loc);
+        closeDbmsModal();
+      }
+    }
+
+    // JSON Export / Import
+    function exportToJson() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dbLocations, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `locations_dbms_backup_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('Exported DBMS locations to JSON file');
+    }
+
+    function triggerImportJson() {
+      document.getElementById('importJsonInput').click();
+    }
+
+    function handleImportJson(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            dbLocations = imported;
+            saveToLocalStorage();
+            renderSidebar();
+            renderDbTable();
+            updateMapPins();
+            showToast(`Imported ${imported.length} location records successfully!`);
+          } else {
+            throw new Error('Invalid format');
+          }
+        } catch (err) {
+          showToast('Failed to import JSON: Invalid location database structure', 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Map Click Picker Tool
+    function enableMapPicker() {
+      isMapPickerActive = true;
+      closeDbmsModal();
+      document.getElementById('pickerBanner').style.display = 'block';
+    }
+
+    function disableMapPicker() {
+      isMapPickerActive = false;
+      document.getElementById('pickerBanner').style.display = 'none';
+    }
+
+    // Modal Handlers
+    function openDbmsModal() {
+      document.getElementById('dbmsModal').classList.add('active');
+    }
+    function closeDbmsModal() {
+      document.getElementById('dbmsModal').classList.remove('active');
+    }
+
+    function filterLocations() {
+      const q = document.getElementById('stateSearchInput').value.toLowerCase();
+      document.querySelectorAll('.state-item').forEach(item => {
+        const name = item.querySelector('.state-item-name').textContent.toLowerCase();
+        const cap = item.querySelector('.state-item-capital').textContent.toLowerCase();
+        item.style.display = (name.includes(q) || cap.includes(q)) ? 'flex' : 'none';
+      });
+    }
+
+    function switchMapMode(mode) {
+      const lMap = document.getElementById('leafletMap');
+      const gFrame = document.getElementById('googleMapFrame');
+      const btnDark = document.getElementById('btnDarkMap');
+      const btnSat = document.getElementById('btnSatMap');
+
+      if (mode === 'leaflet') {
+        lMap.style.display = 'block';
+        gFrame.style.display = 'none';
+        btnDark.classList.add('active');
+        btnSat.classList.remove('active');
+        if (map) map.invalidateSize();
+      } else {
+        lMap.style.display = 'none';
+        gFrame.style.display = 'block';
+        gFrame.src = `https://maps.google.com/maps?q=${currentLocation.lat},${currentLocation.lon}&z=8&output=embed`;
+        btnSat.classList.add('active');
+        btnDark.classList.remove('active');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('currentUserLabel').textContent = currentUser;
+      initMap();
+      loadDatabase();
+    });
+  </script>
+</body>
+</html>

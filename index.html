@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Weather Search - Codeverse Weather Portal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .search-wrapper {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .search-wrapper input {
+      flex: 1;
+      padding: 14px 18px;
+    }
+
+    .search-wrapper button {
+      width: auto;
+      margin-top: 0;
+      padding: 0 24px;
+    }
+
+    .quick-weather-card {
+      text-align: center;
+      display: none;
+      animation: fadeIn 0.4s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .city-name {
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .temp-big {
+      font-size: 4rem;
+      font-weight: 800;
+      margin: 8px 0;
+      color: #38bdf8;
+    }
+
+    .description {
+      font-size: 1.1rem;
+      text-transform: capitalize;
+      color: #cbd5e1;
+      margin-bottom: 24px;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .detail-label {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+    }
+
+    .detail-val {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 4px;
+    }
+
+    .error-box {
+      display: none;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 16px;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      text-align: center;
+      line-height: 1.4;
+      animation: fadeIn 0.3s ease;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <a href="welcome.html" class="logo">codeverse</a>
+    <ul class="nav-links">
+      <li><a href="india_weather.html">🇮🇳 India Weather DBMS & Map</a></li>
+      <li><a href="login.html">Login</a></li>
+    </ul>
+  </nav>
+
+  <section class="login">
+    <div class="circle1"></div>
+    <div class="circle2"></div>
+
+    <div class="box" style="max-width: 520px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+        <h2 class="title" style="text-align:left; margin:0;">Quick Weather</h2>
+        <a href="india_weather.html" style="color:#38bdf8; text-decoration:none; font-size:0.82rem; font-weight:600; padding:6px 12px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.3); border-radius:10px;">Interactive Map & DBMS &rarr;</a>
+      </div>
+      
+      <div class="search-wrapper">
+        <input type="text" id="cityInput" value="London" placeholder="Enter city name..." onkeypress="if(event.key==='Enter') fetchWeather()">
+        <button onclick="fetchWeather()">Search</button>
+      </div>
+
+      <div id="errorBox" class="error-box"></div>
+
+      <div id="weatherCard" class="quick-weather-card">
+        <div class="city-name" id="cityName">London, GB</div>
+        <div class="temp-big" id="temp">15°C</div>
+        <div class="description" id="description">scattered clouds</div>
+
+        <div class="details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Feels Like</span>
+            <span class="detail-val" id="feelsLike">14.5°C</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Humidity</span>
+            <span class="detail-val" id="humidity">72%</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Wind Speed</span>
+            <span class="detail-val" id="windSpeed">4.1 m/s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p id="footer" class="footer">© 2026 Codeverse. All rights reserved.</p>
+  </section>
+
+  <script>
+    const apiKey = 'eb54a61865a9338c289d39b7cc5e19f0';
+
+    async function fetchWeather() {
+      const city = document.getElementById('cityInput').value.trim();
+      const errorBox = document.getElementById('errorBox');
+      const weatherCard = document.getElementById('weatherCard');
+
+      if (!city) return;
+
+      errorBox.style.display = 'none';
+      weatherCard.style.display = 'none';
+
+      const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${apiKey}&units=metric`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(`API Error (${data.cod}): ${data.message || response.statusText}`);
+        }
+
+        document.getElementById('cityName').textContent = `${data.name}, ${data.sys.country}`;
+        document.getElementById('temp').textContent = `${Math.round(data.main.temp)}°C`;
+        document.getElementById('description').textContent = data.weather[0].description;
+        document.getElementById('feelsLike').textContent = `${Math.round(data.main.feels_like)}°C`;
+        document.getElementById('humidity').textContent = `${data.main.humidity}%`;
+        document.getElementById('windSpeed').textContent = `${data.wind.speed} m/s`;
+
+        weatherCard.style.display = 'block';
+
+      } catch (error) {
+        errorBox.innerHTML = `⚠️ <strong>Error:</strong> ${error.message}`;
+        errorBox.style.display = 'block';
+      }
+    }
+
+    fetchWeather();
+  </script>
+</body>
+</html>
