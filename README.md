@@ -1,105 +1,91 @@
-# 🌤️ Codeverse Weather Portal & Location DBMS
+# 🌤️ Codeverse Weather Portal & Location DBMS (React + Vite Edition)
 
-A modern, feature-rich weather monitoring dashboard and location **Database Management System (DBMS)** built with Vanilla HTML5, CSS3 Glassmorphism, JavaScript (ES6+), Leaflet.js, OpenWeatherMap API, and a custom native Node.js REST backend.
+A modern, feature-rich weather monitoring dashboard and location **Database Management System (DBMS)** rebuilt from the ground up with **React 18**, **Vite**, **Leaflet.js**, **OpenWeatherMap API**, and a custom **Node.js REST API backend**.
 
 ---
 
 ## ✨ Features
 
-### 🗺️ Interactive Vector Map & Location Picker
-- **Interactive Leaflet Dark Vector Map**: Smooth panning, zooming, and location markers across India and worldwide coordinates.
-- **Map Click Coordinate Picker**: Click anywhere on the interactive map to auto-capture latitude and longitude coordinates.
-- **Google Satellite View Toggle**: Easily switch between dark vector maps and satellite imagery.
+### ⚛️ Modern React 18 Architecture
+- **Componentized Design System**: Clean, modular structure (`Navbar`, `InteractiveMap`, `WeatherHeroCard`, `AqiCard`, `ForecastGrid`, `DbmsModal`, `QuickSearch`, `LoginView`, `WelcomeView`).
+- **React Context API**: Powered by `AuthContext` (session management) and `WeatherContext` (telemetry state, DBMS operations, toasts, unit toggling).
+
+### 🗺️ Interactive Map & Coordinate Picker
+- **Leaflet Dark Vector Map**: Smooth panning, zooming, and location markers across India and worldwide coordinates.
+- **Satellite Imagery Toggle**: Toggle between CartoDB dark vector basemap and Esri high-resolution satellite imagery.
+- **Map Click Coordinate Picker**: Click anywhere on the map to auto-capture latitude and longitude for custom locations.
 
 ### 🌤️ Weather & Environmental Intelligence
-- **Real-Time Weather Metrics**: Displays temperature, feels-like temperature, humidity, wind speed, and atmospheric pressure.
-- **📅 5-Day Weather Forecast**: 5-day daily forecast summaries with weather condition icons.
-- **🍃 Air Quality Index (AQI)**: Color-coded air quality status badges (Good 🟢, Fair 🟡, Moderate 🟧, Poor 🔴, Very Poor 🟣) along with PM2.5, PM10, NO2, and O3 pollutant metrics.
+- **Real-Time Weather Metrics**: Live temperature, feels-like temperature, humidity, wind speed, and atmospheric pressure.
+- **📅 5-Day Weather Forecast**: Daily forecast summaries with weather condition icons and temperatures.
+- **🍃 Air Quality Index (AQI)**: Color-coded air quality status badges (Good 🟢, Fair 🟡, Moderate 🟧, Poor 🔴, Very Poor 🟣) with PM2.5, PM10, NO2, and O3 pollutant breakdown.
 - **🌡️ Temperature Unit Switcher**: Toggle dynamically between Celsius (°C) and Fahrenheit (°F).
 
-### 🗄️ Location Database Management System (DBMS)
+### 🗄️ Location DBMS (Database Management System)
 - **Full CRUD Operations**:
-  - **Create**: Add custom monitoring locations with category tags (Capital, Coastal, Hill Station, IT Hub, Heritage, Custom Base).
-  - **Read**: Browse, search, filter, and load weather telemetry for saved locations.
-  - **Update (`PUT`)**: Pre-fill and edit location details (name, state, coordinates, category, notes) in real-time.
-  - **Delete (`DELETE`)**: Remove location records from the system.
-- **🔍 Auto-Geocode City Lookup**: Type any city name (e.g. *Manali, Tokyo, London*) to auto-fetch coordinates.
-- **📥 JSON Database Export & Import**: Export stored location records to `.json` backup files and import database backups with one click.
-- **🔔 Toast Notification System**: Floating glassmorphism notifications providing real-time feedback for DBMS operations.
-
-### 🔐 User Authentication & Session Management
-- **User Authentication**: Client-side registration, login validation, and LocalStorage session persistence.
-- **Protected Portal Access**: Automatic authentication guard redirecting unauthenticated users to `login.html`.
+  - **Create**: Add custom monitoring locations with category tags.
+  - **Read**: Search, filter, and load telemetry for saved locations.
+  - **Update (`PUT`)**: Edit existing location details in real-time.
+  - **Delete (`DELETE`)**: Remove location records from persistent storage.
+- **🔍 Auto-Geocode City Lookup**: Search any city worldwide (e.g. *Manali, Tokyo, London*) to auto-fetch coordinates using OpenWeather Geocoding API.
+- **📥 JSON Database Export & Import**: One-click JSON backup file export and import.
+- **🔔 Toast Notification System**: Glassmorphism toast alerts giving real-time feedback for DBMS actions.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: HTML5, Vanilla CSS3 (Glassmorphism, CSS Variables, Animations), JavaScript (ES6+ Async/Await, Fetch API)
-- **Mapping Library**: Leaflet.js, OpenStreetMap / CARTO Basemaps
-- **Weather Telemetry**: OpenWeatherMap API (Current Weather, 5-Day Forecast, Air Pollution, Direct Geocoding)
-- **Backend API**: Native Node.js HTTP Server (`server.js`) with zero external runtime npm dependencies
-- **Data Storage**: Local JSON file storage (`locations_db.json`) + LocalStorage fallback
-
----
-
-## 📁 Repository Structure
-
-```
-Front-End-Project/
-├── server.js            # Node.js HTTP server & REST API (GET, POST, PUT, DELETE)
-├── india_weather.html   # Main Interactive Weather Portal & Location DBMS Manager
-├── index.html           # Standalone Quick Weather Search Widget
-├── login.html           # Authentication & Account Registration Interface
-├── welcome.html         # User Dashboard & Hub
-├── script.js            # Authentication logic & route protection
-├── style.css            # Modern glassmorphism design system
-├── weather.js           # CLI testing utility for OpenWeather API queries
-├── locations_db.json    # Persistent JSON storage for location DBMS
-├── Bell_Icon.jpeg       # Notification icon asset
-├── Eye.jpeg             # Password visibility icon asset
-├── .gitignore           # Git ignore rules
-└── README.md            # Project documentation
-```
+- **Frontend**: React 18, Vite, CSS3 Glassmorphic Design System, Outfit Google Font
+- **Mapping Library**: Leaflet.js, OpenStreetMap / CARTO Basemaps / Esri Satellite
+- **Weather API**: OpenWeatherMap API (Current Weather, 5-Day Forecast, Air Pollution, Direct Geocoding)
+- **Backend API**: Node.js HTTP Server (`server.js`) with REST API endpoints & static SPA serving
+- **Data Storage**: Persistent `locations_db.json` storage + LocalStorage fallback
 
 ---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v14+ recommended) installed on your system.
+- [Node.js](https://nodejs.org/) (v16+ recommended) installed on your system.
 
 ### Running the Application
 
-1. **Clone the Repository**:
+1. **Install Dependencies**:
    ```bash
-   git clone https://github.com/CowardCow/Front-End-Project.git
-   cd Front-End-Project
+   npm install
    ```
 
-2. **Start the REST Backend Server**:
+2. **Build the Production Bundle**:
    ```bash
-   node server.js
+   npm run build
    ```
 
-3. **Open in Browser**:
-   Navigate to `http://localhost:3000/` in your web browser.
+3. **Start the REST Backend & Production App**:
+   ```bash
+   npm start
+   ```
+   Open `http://localhost:3000` in your web browser.
 
-4. **Default Login Credentials**:
+4. **Development Mode (Vite Dev Server)**:
+   ```bash
+   npm run dev
+   ```
+
+5. **Default Login Credentials**:
    - **Username**: `admin`
    - **Password**: `password`
-   *(You can also register a new account on the Sign Up tab)*.
+   *(Or click "Sign Up" to create a new user account)*.
 
 ---
 
 ## 📡 REST API Endpoints
 
-The native Node.js HTTP server exposes the following REST endpoints at `http://localhost:3000`:
+The Node.js server exposes the following endpoints at `http://localhost:3000`:
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/locations` | Retrieve all stored location records |
-| `POST` | `/api/locations` | Add a new custom location record |
+| `POST` | `/api/locations` | Add a new location record |
 | `PUT` | `/api/locations/:id` | Update an existing location record by ID |
 | `DELETE` | `/api/locations/:id` | Delete a location record by ID |
 

@@ -1,9 +1,14 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const PORT = 3000;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'locations_db.json');
+const DIST_DIR = path.join(__dirname, 'dist');
 
 // Default seed locations if DB file doesn't exist
 const initialLocations = [
@@ -39,7 +44,6 @@ const initialLocations = [
   { id: '30', name: "Kolkata", state: "West Bengal", lat: 22.5726, lon: 88.3639, category: "Cultural Hub", notes: "City of Joy" }
 ];
 
-// Ensure DB file exists
 function loadDb() {
   if (!fs.existsSync(DB_FILE)) {
     saveDb(initialLocations);
@@ -59,7 +63,6 @@ function saveDb(data) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
 }
 
-// HTTP Server
 const server = http.createServer((req, res) => {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -74,40 +77,41 @@ const server = http.createServer((req, res) => {
 
   const parsedUrl = new URL(req.url, `http://localhost:${PORT}`);
 
-  // API Endpoints for Location DBMS
-  if (parsedUrl.pathname === '/api/locations') {
-    if (req.method === 'GET') {
-      const locations = loadDb();
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(locations));
-      return;
-    }
+  // GET /api/locations
+  if (parsedUrl.pathname === '/api/locations' && req.method === 'GET') {
+    const locations = loadDb();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(locations));
+    return;
+  }
 
-    if (req.method === 'POST') {
-      let body = '';
-      req.on('data', chunk => body += chunk);
-      req.on('end', () => {
-        try {
-          const newLoc = JSON.parse(body);
-          if (!newLoc.name || !newLoc.lat || !newLoc.lon) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Name, lat, and lon are required' }));
-            return;
-          }
-          const locations = loadDb();
-          newLoc.id = Date.now().toString();
-          locations.unshift(newLoc);
-          saveDb(locations);
-
-          res.writeHead(201, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify(newLoc));
-        } catch (err) {
+  // POST /api/locations
+  if (parsedUrl.pathname === '/api/locations' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const newLoc = JSON.parse(body);
+        if (!newLoc.name || newLoc.lat === undefined || newLoc.lon === undefined) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Invalid JSON payload' }));
+          res.end(JSON.stringify({ error: 'Name, lat, and lon are required' }));
+          return;
         }
-      });
-      return;
-    }
+        const locations = loadDb();
+        newLoc.id = Date.now().toString();
+        newLoc.lat = parseFloat(newLoc.lat);
+        newLoc.lon = parseFloat(newLoc.lon);
+        locations.unshift(newLoc);
+        saveDb(locations);
+
+        res.writeHead(201, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(newLoc));
+      } catch (err) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Invalid JSON payload' }));
+      }
+    });
+    return;
   }
 
   // PUT /api/locations/:id
@@ -126,6 +130,9 @@ const server = http.createServer((req, res) => {
           res.end(JSON.stringify({ error: 'Location not found' }));
           return;
         }
+
+        if (updateData.lat !== undefined) updateData.lat = parseFloat(updateData.lat);
+        if (updateData.lon !== undefined) updateData.lon = parseFloat(updateData.lon);
 
         locations[index] = { ...locations[index], ...updateData, id };
         saveDb(locations);
@@ -159,11 +166,13 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // Serve Static Files
-  let reqPath = parsedUrl.pathname === '/' ? '/login.html' : parsedUrl.pathname;
-  let filePath = path.join(__dirname, reqPath);
-  if (!fs.existsSync(filePath)) {
-    filePath = path.join(__dirname, 'login.html');
+  // Serve static files from Vite build (dist directory)
+  let reqPath = parsedUrl.pathname === '/' ? '/index.html' : parsedUrl.pathname;
+  let filePath = path.join(DIST_DIR, reqPath);
+
+  // Fallback to index.html for SPA routing if file does not exist
+  if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+    filePath = path.join(DIST_DIR, 'index.html');
   }
 
   const ext = path.extname(filePath).toLowerCase();
@@ -174,12 +183,13 @@ const server = http.createServer((req, res) => {
     '.json': 'application/json',
     '.png': 'image/png',
     '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
     '.svg': 'image/svg+xml'
   };
 
   fs.readFile(filePath, (err, content) => {
     if (err) {
-      res.writeHead(404);
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
       res.end('File Not Found');
     } else {
       res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'text/plain' });
@@ -189,6 +199,6 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`\n🚀 Weather DBMS Server running at http://localhost:${PORT}`);
-  console.log(`📁 Database storage file: ${DB_FILE}\n`);
+  console.log(`\n🚀 Codeverse Weather DBMS Server running at http://localhost:${PORT}`);
+  console.log(`📁 Persistent Storage: ${DB_FILE}\n`);
 });
