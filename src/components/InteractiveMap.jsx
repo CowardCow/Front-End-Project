@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { useWeather } from '../context/WeatherContext';
 
-export default function InteractiveMap() {
+export default function InteractiveMap({ onLocationPicked }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const tileLayerRef = useRef(null);
@@ -112,7 +112,10 @@ export default function InteractiveMap() {
         direction: 'top',
         offset: [0, -10]
       });
-      marker.on('click', () => selectLocation(loc));
+      marker.on('click', () => {
+        selectLocation(loc);
+        onLocationPicked?.();
+      });
       markersGroupRef.current.addLayer(marker);
     });
   }, [locations, selectLocation]);

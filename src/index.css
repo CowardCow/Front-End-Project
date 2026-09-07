@@ -135,3 +135,219 @@ input, select, textarea {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Dashboard layout improvements */
+.dashboard-shell {
+  min-width: 0;
+}
+
+.location-info-card,
+.location-panel,
+.map-selection-hint {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
+}
+
+.location-info-card {
+  overflow: hidden;
+}
+
+.info-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.025);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.info-tab {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-sub);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.info-tab:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.info-tab.active {
+  color: #06111c;
+  background: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+.info-tab-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 20px;
+}
+
+.info-tab-content h3 {
+  font-size: 1.05rem;
+  margin: 2px 0 6px;
+}
+
+.info-tab-content p:not(.info-eyebrow) {
+  color: var(--text-sub);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  max-width: 760px;
+}
+
+.info-eyebrow,
+.panel-kicker {
+  color: var(--accent-cyan);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.info-location-badge {
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  color: var(--text-main);
+}
+
+.info-location-badge span {
+  color: var(--text-sub);
+  font-size: 0.78rem;
+}
+
+.location-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.location-panel {
+  min-width: 0;
+  padding: 16px;
+}
+
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.panel-heading h3 {
+  margin-top: 3px;
+  font-size: 1.05rem;
+}
+
+.selected-pill {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--accent-cyan);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.location-panel > .location-info-card {
+  box-shadow: none;
+}
+
+.location-panel .location-info-card {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+
+.google-map-frame {
+  display: block;
+  width: 100%;
+  height: 310px;
+  border: 0;
+  border-radius: 14px;
+  background: #0d1322;
+}
+
+.map-selection-hint {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  color: var(--text-sub);
+}
+
+.map-selection-hint > span {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 13px;
+  background: rgba(56, 189, 248, 0.12);
+  font-size: 1.2rem;
+}
+
+.map-selection-hint strong {
+  display: block;
+  color: var(--text-main);
+  margin-bottom: 3px;
+}
+
+.map-selection-hint p {
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+/* Keep the dashboard usable without creating a giant horizontal layout. */
+@media (max-width: 1100px) {
+  .location-panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .info-tab-content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .info-location-badge {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 650px) {
+  .info-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .google-map-frame {
+    height: 260px;
+  }
+}
+
+@media (max-width: 900px) {
+  .portal-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .portal-layout > div:first-child {
+    position: relative !important;
+    top: auto !important;
+    height: auto !important;
+    max-height: 360px;
+  }
+}
