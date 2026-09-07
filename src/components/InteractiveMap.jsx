@@ -21,6 +21,18 @@ export default function InteractiveMap({ onLocationPicked }) {
     showToast
   } = useWeather();
 
+  const createDarkLayer = () => {
+    const darkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '&copy; Esri &copy; OpenStreetMap contributors',
+      maxZoom: 19
+    });
+    const darkRef = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+      attribution: '',
+      maxZoom: 19
+    });
+    return L.layerGroup([darkBase, darkRef]);
+  };
+
   // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -29,12 +41,9 @@ export default function InteractiveMap({ onLocationPicked }) {
       const map = L.map(mapContainerRef.current, { zoomControl: false }).setView([20.5937, 78.9629], 5);
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      const darkTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        maxZoom: 19
-      });
-      darkTile.addTo(map);
-      tileLayerRef.current = darkTile;
+      const darkLayer = createDarkLayer();
+      darkLayer.addTo(map);
+      tileLayerRef.current = darkLayer;
 
       markersGroupRef.current.addTo(map);
       mapInstanceRef.current = map;
@@ -58,10 +67,9 @@ export default function InteractiveMap({ onLocationPicked }) {
     }
 
     if (mapMode === 'leaflet') {
-      tileLayerRef.current = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        maxZoom: 19
-      }).addTo(map);
+      const darkLayer = createDarkLayer();
+      darkLayer.addTo(map);
+      tileLayerRef.current = darkLayer;
     } else {
       // High resolution Satellite Basemap
       tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {

@@ -1189,9 +1189,15 @@ path.addEventListener('mouseleave', () => {
       map = L.map('leafletMap', { zoomControl: false }).setView([20.5937, 78.9629], 5);
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO'
-      }).addTo(map);
+      const darkBase = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '&copy; Esri &copy; OpenStreetMap contributors',
+        maxZoom: 19
+      });
+      const darkRef = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '',
+        maxZoom: 19
+      });
+      L.layerGroup([darkBase, darkRef]).addTo(map);
 
       // Handle map click for picker tool
       map.on('click', (e) => {
