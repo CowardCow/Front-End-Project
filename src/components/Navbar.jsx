@@ -41,7 +41,7 @@ export default function Navbar({ activeView, setActiveView }) {
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent'
           }}>
-            Codeverse Weather Portal
+            Desh Dekho
           </h1>
           <p style={{ fontSize: '0.78rem', color: 'var(--text-sub)' }}>
             Interactive Vector Map & Location DBMS
@@ -146,8 +146,6 @@ export default function Navbar({ activeView, setActiveView }) {
             Login / Sign Up
           </button>
         )}
-
-
       </div>
     </header>
   );

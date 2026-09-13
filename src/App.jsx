@@ -11,11 +11,13 @@ import QuickSearch from './components/QuickSearch';
 import LoginView from './components/LoginView';
 import WelcomeView from './components/WelcomeView';
 import ToastContainer from './components/ToastContainer';
+import LocationInfoTabs from './components/LocationInfoTabs';
 
 export default function App() {
   const { isLoggedIn } = useAuth();
   const { locations, currentLocation, selectLocation, searchQuery, setSearchQuery } = useWeather();
   const [activeView, setActiveView] = useState('portal'); // 'portal', 'quickSearch', 'welcome', 'login'
+  const [showLocationPanels, setShowLocationPanels] = useState(false);
 
   // Filter sidebar locations
   const filteredLocations = locations.filter(loc =>
@@ -48,14 +50,14 @@ export default function App() {
       {activeView === 'welcome' && <WelcomeView setActiveView={setActiveView} />}
 
       {activeView === 'portal' && (
-        <div style={{
+        <div className="portal-layout" style={{
           maxWidth: '1440px',
           margin: '0 auto',
-          padding: '24px',
+          padding: '20px',
           width: '100%',
           display: 'grid',
-          gridTemplateColumns: '340px 1fr',
-          gap: '24px',
+          gridTemplateColumns: '300px minmax(0, 1fr)',
+          gap: '20px',
           flex: 1
         }}>
           {/* Sidebar */}
@@ -67,7 +69,7 @@ export default function App() {
             padding: '20px',
             display: 'flex',
             flexDirection: 'column',
-            height: 'calc(100vh - 110px)',
+            height: 'calc(100vh - 100px)',
             position: 'sticky',
             top: '90px',
             boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)'
@@ -166,11 +168,54 @@ export default function App() {
           </div>
 
           {/* Main Dashboard */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <InteractiveMap />
-            <WeatherHeroCard />
-            <AqiCard />
-            <ForecastGrid />
+          <div className="dashboard-shell" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <InteractiveMap onLocationPicked={() => setShowLocationPanels(true)} />
+
+            {showLocationPanels ? (
+              <>
+                <LocationInfoTabs />
+                <div className="location-panels">
+                  <div className="location-panel">
+                    <div className="panel-heading">
+                      <div>
+                        <span className="panel-kicker">LIVE TELEMETRY</span>
+                        <h3>🌤️ Weather</h3>
+                      </div>
+                      <span className="selected-pill">{currentLocation?.name || 'Selected location'}</span>
+                    </div>
+                    <WeatherHeroCard />
+                    <AqiCard />
+                  </div>
+
+                  <div className="location-panel">
+                    <div className="panel-heading">
+                      <div>
+                        <span className="panel-kicker">LOCATION VIEW</span>
+                        <h3>📍 Google Maps</h3>
+                      </div>
+                    </div>
+                    {currentLocation && (
+                      <iframe
+                        title={`Google Maps - ${currentLocation.name}`}
+                        className="google-map-frame"
+                        src={`https://www.google.com/maps?q=${currentLocation.lat},${currentLocation.lon}&z=10&output=embed`}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    )}
+                  </div>
+                </div>
+                <ForecastGrid />
+              </>
+            ) : (
+              <div className="map-selection-hint">
+                <span>📍</span>
+                <div>
+                  <strong>Select a location from the map</strong>
+                  <p>Click a map marker to reveal weather, Google Maps, history, news and culture information.</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
