@@ -6,18 +6,15 @@ export default function WeatherHeroCard() {
 
   if (!currentLocation) {
     return (
-      <div
-        id="weatherDisplayCard"
-        style={{
-          background: 'var(--card-bg, rgba(18, 26, 43, 0.75))',
-          backdropFilter: 'blur(16px)',
-          border: '1px solid var(--card-border, rgba(255, 255, 255, 0.12))',
-          borderRadius: '24px',
-          padding: '28px',
-          textAlign: 'center',
-          color: 'var(--text-sub, #94a3b8)'
-        }}
-      >
+      <div style={{
+        background: 'var(--card-bg)',
+        backdropFilter: 'blur(16px)',
+        border: '1px solid var(--card-border)',
+        borderRadius: '24px',
+        padding: '28px',
+        textAlign: 'center',
+        color: 'var(--text-sub)'
+      }}>
         Select a location from the sidebar or map to load live weather telemetry.
       </div>
     );
@@ -32,69 +29,45 @@ export default function WeatherHeroCard() {
   const iconCode = weatherData?.weather?.[0]?.icon || '02d';
   const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
 
-  // Safe formatting for coordinates
-  const formattedLat = !isNaN(Number(currentLocation.lat))
-    ? Number(currentLocation.lat).toFixed(4)
-    : '--';
-  const formattedLon = !isNaN(Number(currentLocation.lon))
-    ? Number(currentLocation.lon).toFixed(4)
-    : '--';
-
   return (
-    <div
-      id="weatherDisplayCard"
-      style={{
-        background: 'var(--card-bg, rgba(18, 26, 43, 0.75))',
-        backdropFilter: 'blur(16px)',
-        border: '1px solid var(--card-border, rgba(255, 255, 255, 0.12))',
-        borderRadius: '24px',
-        padding: '28px',
-        boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
-        position: 'relative'
-      }}
-    >
-      {/* Loading Indicator Pill */}
+    <div style={{
+      background: 'var(--card-bg)',
+      backdropFilter: 'blur(16px)',
+      border: '1px solid var(--card-border)',
+      borderRadius: '24px',
+      padding: '28px',
+      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.4)',
+      position: 'relative'
+    }}>
       {loadingWeather && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '12px',
-            right: '20px',
-            fontSize: '0.8rem',
-            color: 'var(--accent-cyan, #38bdf8)'
-          }}
-        >
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          right: '20px',
+          fontSize: '0.8rem',
+          color: 'var(--accent-cyan)'
+        }}>
           Updating live weather telemetry...
         </div>
       )}
 
       {/* Main Title Row */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '20px'
-        }}
-      >
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '20px'
+      }}>
         <div>
-          <h2 style={{ fontSize: '2.2rem', fontWeight: 700, color: '#fff', margin: 0 }}>
+          <h2 style={{ fontSize: '2.2rem', fontWeight: 700, color: '#fff' }}>
             {currentLocation.name}
           </h2>
-          <p
-            style={{
-              color: 'var(--accent-cyan, #38bdf8)',
-              fontSize: '1.05rem',
-              fontWeight: 500,
-              marginTop: '4px',
-              marginBottom: 0
-            }}
-          >
+          <p style={{ color: 'var(--accent-cyan)', fontSize: '1.05rem', fontWeight: 500, marginTop: '4px' }}>
             State: {currentLocation.state || 'India'}
           </p>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-sub, #94a3b8)', marginTop: '6px' }}>
-            Lat: {formattedLat} | Lon: {formattedLon}
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-sub)', marginTop: '6px' }}>
+            Lat: {parseFloat(currentLocation.lat).toFixed(4)} | Lon: {parseFloat(currentLocation.lon).toFixed(4)}
           </div>
         </div>
 
@@ -111,17 +84,14 @@ export default function WeatherHeroCard() {
           />
           <div>
             <div style={{ fontSize: '4.2rem', fontWeight: 800, lineHeight: 1, color: '#fff' }}>
-              {temp !== undefined ? formatTemp(temp) : '--'}
+              {formatTemp(temp)}
             </div>
-            <div
-              style={{
-                fontSize: '1.1rem',
-                color: 'var(--accent-cyan, #38bdf8)',
-                fontWeight: 500,
-                textTransform: 'capitalize',
-                marginTop: '4px'
-              }}
-            >
+            <div style={{
+              fontSize: '1.1rem',
+              color: 'var(--accent-cyan)',
+              fontWeight: 500,
+              textTransform: 'capitalize'
+            }}>
               {condition}
             </div>
           </div>
@@ -129,81 +99,63 @@ export default function WeatherHeroCard() {
       </div>
 
       {/* Metrics Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-          gap: '14px',
-          marginTop: '24px'
-        }}
-      >
-        <div
-          style={{
-            background: 'rgba(255, 255, 255, 0.04)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            padding: '16px',
-            textAlign: 'center'
-          }}
-        >
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+        gap: '14px',
+        marginTop: '24px'
+      }}>
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.04)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '16px',
+          padding: '16px',
+          textAlign: 'center'
+        }}>
           <div style={{ fontSize: '1.2rem', marginBottom: '6px' }}>🌡️</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub, #94a3b8)', textTransform: 'uppercase' }}>
-            Feels Like
-          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)', textTransform: 'uppercase' }}>Feels Like</div>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff', marginTop: '4px' }}>
-            {feelsLike !== undefined ? formatTemp(feelsLike) : '--'}
+            {formatTemp(feelsLike)}
           </div>
         </div>
 
-        <div
-          style={{
-            background: 'rgba(255, 255, 255, 0.04)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            padding: '16px',
-            textAlign: 'center'
-          }}
-        >
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.04)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '16px',
+          padding: '16px',
+          textAlign: 'center'
+        }}>
           <div style={{ fontSize: '1.2rem', marginBottom: '6px' }}>💧</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub, #94a3b8)', textTransform: 'uppercase' }}>
-            Humidity
-          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)', textTransform: 'uppercase' }}>Humidity</div>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff', marginTop: '4px' }}>
             {humidity !== undefined ? `${humidity}%` : '--'}
           </div>
         </div>
 
-        <div
-          style={{
-            background: 'rgba(255, 255, 255, 0.04)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            padding: '16px',
-            textAlign: 'center'
-          }}
-        >
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.04)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '16px',
+          padding: '16px',
+          textAlign: 'center'
+        }}>
           <div style={{ fontSize: '1.2rem', marginBottom: '6px' }}>💨</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub, #94a3b8)', textTransform: 'uppercase' }}>
-            Wind Speed
-          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)', textTransform: 'uppercase' }}>Wind Speed</div>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff', marginTop: '4px' }}>
             {windSpeed !== undefined ? `${windSpeed} m/s` : '--'}
           </div>
         </div>
 
-        <div
-          style={{
-            background: 'rgba(255, 255, 255, 0.04)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '16px',
-            padding: '16px',
-            textAlign: 'center'
-          }}
-        >
+        <div style={{
+          background: 'rgba(255, 255, 255, 0.04)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '16px',
+          padding: '16px',
+          textAlign: 'center'
+        }}>
           <div style={{ fontSize: '1.2rem', marginBottom: '6px' }}>⏲️</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub, #94a3b8)', textTransform: 'uppercase' }}>
-            Pressure
-          </div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)', textTransform: 'uppercase' }}>Pressure</div>
           <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#fff', marginTop: '4px' }}>
             {pressure !== undefined ? `${pressure} hPa` : '--'}
           </div>
