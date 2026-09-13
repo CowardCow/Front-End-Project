@@ -5,9 +5,17 @@ import { stateCenters } from '../data/stateCenters';
 import './InteractiveMap.css';
 
 export default function InteractiveMap({ onLocationPicked }) {
-  const { currentLocation, selectLocation } = useWeather();
+  const {
+    currentLocation,
+    selectLocation,
+    isMapPickerActive,
+    setIsMapPickerActive,
+    setPickedCoords,
+    setIsDbmsModalOpen,
+    showToast
+  } = useWeather();
   const mapContainerRef = useRef(null);
-const [activeState, setActiveState] = useState(null);
+  const [activeState, setActiveState] = useState(null);
   const [tooltip, setTooltip] = useState({
     visible: false,
     text: '',
@@ -43,26 +51,45 @@ const [activeState, setActiveState] = useState(null);
 
   // Click handler to select state and scroll smoothly
   const handleStateClick = (e) => {
-  const stateId = e.target.id;
+    const stateId = e.target.id;
 
-  // Remove previous active state
-  document.querySelector("#features path.active")?.classList.remove("active");
+    // Remove previous active state
+    document.querySelector("#features path.active")?.classList.remove("active");
 
-  // Highlight clicked state
-  e.target.classList.add("active");
+    // Highlight clicked state
+    e.target.classList.add("active");
 
-  const info = stateCenters[stateId];
+    const info = stateCenters[stateId];
 
-  if (info) {
-    selectLocation(info);
-    onLocationPicked?.();
-  }
-};
+    if (info) {
+      if (isMapPickerActive) {
+        setPickedCoords({ lat: info.lat, lon: info.lon });
+        setIsMapPickerActive(false);
+        setIsDbmsModalOpen(true);
+        showToast?.(`Selected coordinates for ${info.name}: (${info.lat}, ${info.lon})`, 'success');
+      } else {
+        selectLocation(info);
+        onLocationPicked?.();
+      }
+    }
+  };
 
   return (
     <div className="map-card">
-      <div className="map-card-header">
+      <div className="map-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
         <h3>Interactive Map of India</h3>
+        {isMapPickerActive && (
+          <div style={{
+            background: 'rgba(255, 112, 67, 0.9)',
+            color: '#fff',
+            padding: '4px 14px',
+            borderRadius: '16px',
+            fontSize: '0.8rem',
+            fontWeight: 600
+          }}>
+            📍 Coordinate Picker Active: Click any state to select coordinates
+          </div>
+        )}
       </div>
 
       <div
