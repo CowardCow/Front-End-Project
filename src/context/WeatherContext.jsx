@@ -26,6 +26,8 @@ export function WeatherProvider({ children }) {
   const [isFahrenheit, setIsFahrenheit] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDbmsModalOpen, setIsDbmsModalOpen] = useState(false);
+  const [isMapPickerActive, setIsMapPickerActive] = useState(false);
+  const [pickedCoords, setPickedCoords] = useState(null);
   const [toasts, setToasts] = useState([]);
 
   // Toast Helper
@@ -46,25 +48,38 @@ export function WeatherProvider({ children }) {
     return `${Math.round(celsius)}°C`;
   }, [isFahrenheit]);
 
-  // Load Locations safely from LocalStorage (with seed fallback)
-  const loadLocations = useCallback(() => {
-    const localData = localStorage.getItem('weather_dbms_locations');
-    let dataToLoad = defaultSeedLocations;
-    if (localData) {
-      try {
-        const parsed = JSON.parse(localData);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          dataToLoad = parsed;
+  // Load Locations from backend REST API with LocalStorage fallback
+  const loadLocations = useCallback(async () => {
+    try {
+      const res = await fetch('/api/locations');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setLocations(data);
+          localStorage.setItem('weather_dbms_locations', JSON.stringify(data));
+          setCurrentLocation(prev => prev || data[0]);
+          return;
         }
-      } catch (e) {
-        dataToLoad = defaultSeedLocations;
       }
-    } else {
-      localStorage.setItem('weather_dbms_locations', JSON.stringify(defaultSeedLocations));
+      throw new Error('REST API unreachable or returned empty array');
+    } catch (err) {
+      const localData = localStorage.getItem('weather_dbms_locations');
+      let dataToLoad = defaultSeedLocations;
+      if (localData) {
+        try {
+          const parsed = JSON.parse(localData);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            dataToLoad = parsed;
+          }
+        } catch (e) {
+          dataToLoad = defaultSeedLocations;
+        }
+      } else {
+        localStorage.setItem('weather_dbms_locations', JSON.stringify(defaultSeedLocations));
+      }
+      setLocations(dataToLoad);
+      setCurrentLocation(prev => prev || dataToLoad[0]);
     }
-
-    setLocations(dataToLoad);
-    setCurrentLocation(prev => prev || dataToLoad[0]);
   }, []);
 
   useEffect(() => {
@@ -98,7 +113,8 @@ export function WeatherProvider({ children }) {
       }
       if (aqiRes.ok) {
         const aqi = await aqiRes.json();
-        setAqiData(aqi);
+        // OpenWeather returns { list: [ { main: { aqi }, components: { co, no2, pm2_5, ... } } ] }
+        setAqiData(aqi.list && aqi.list.length > 0 ? aqi.list[0] : null);
       }
     } catch (err) {
       showToast(`Error fetching weather: ${err.message}`, 'error');
@@ -129,26 +145,142 @@ export function WeatherProvider({ children }) {
     setCurrentLocation(formattedLoc);
   }, []);
 
-  // CRUD Helpers using LocalStorage
-  const addLocation = (newLoc) => {
+  // CRUD Helpers: sync with backend REST API and persist to LocalStorage
+  const addLocation = async (newLoc) => {
+    try {
+      const res = await fetch('/api/locations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLoc)
+      });
+      if (res.ok) {
+        const savedLoc = await res.json();
+        const updated = [savedLoc, ...locations.filter(l => l.id !== savedLoc.id)];
+        setLocations(updated);
+        localStorage.setItem('weather_dbms_locations', JSON.stringify(updated));
+        setCurrentLocation(savedLoc);
+        showToast(`Saved location "${savedLoc.name}" to database!`);
+        return true;
+      }
+    } catch (err) {
+      // Fallback locally
+    }
+
     const locWithId = { ...newLoc, id: Date.now().toString() };
     const updated = [locWithId, ...locations];
     setLocations(updated);
     localStorage.setItem('weather_dbms_locations', JSON.stringify(updated));
     setCurrentLocation(locWithId);
-    showToast(`Saved location "${newLoc.name}"!`);
+    showToast(`Saved location "${newLoc.name}" locally!`);
     return true;
   };
 
-  const deleteLocation = (id) => {
+  const updateLocation = async (id, updatedFields) => {
+    try {
+      const res = await fetch(`/api/locations/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        const next = locations.map(l => l.id === id ? updated : l);
+        setLocations(next);
+        localStorage.setItem('weather_dbms_locations', JSON.stringify(next));
+        if (currentLocation && currentLocation.id === id) {
+          setCurrentLocation(updated);
+        }
+        showToast(`Updated record for "${updated.name}"!`);
+        return true;
+      }
+    } catch (err) {
+      // Fallback locally
+    }
+
+    const next = locations.map(l => l.id === id ? { ...l, ...updatedFields } : l);
+    setLocations(next);
+    localStorage.setItem('weather_dbms_locations', JSON.stringify(next));
+    if (currentLocation && currentLocation.id === id) {
+      setCurrentLocation(next.find(l => l.id === id));
+    }
+    showToast(`Updated record locally!`);
+    return true;
+  };
+
+  const deleteLocation = async (id) => {
+    const target = locations.find(l => l.id === id);
+    try {
+      const res = await fetch(`/api/locations/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        const filtered = locations.filter(l => l.id !== id);
+        setLocations(filtered);
+        localStorage.setItem('weather_dbms_locations', JSON.stringify(filtered));
+        if (currentLocation && currentLocation.id === id && filtered.length > 0) {
+          setCurrentLocation(filtered[0]);
+        }
+        showToast(`Deleted record "${target?.name || id}"!`);
+        return true;
+      }
+    } catch (err) {
+      // Fallback locally
+    }
+
     const filtered = locations.filter(l => l.id !== id);
     setLocations(filtered);
     localStorage.setItem('weather_dbms_locations', JSON.stringify(filtered));
     if (currentLocation && currentLocation.id === id && filtered.length > 0) {
       setCurrentLocation(filtered[0]);
     }
-    showToast('Deleted location record!');
+    showToast('Deleted location record locally!');
     return true;
+  };
+
+  // Export JSON Database
+  const exportToJson = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(locations, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `weather_locations_db_${Date.now()}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    showToast("Exported database to JSON file!");
+  };
+
+  // Import JSON Database
+  const importLocations = (importedArray) => {
+    if (!Array.isArray(importedArray)) {
+      showToast("Invalid JSON file format. Expected an array of locations.", "error");
+      return;
+    }
+    setLocations(importedArray);
+    localStorage.setItem('weather_dbms_locations', JSON.stringify(importedArray));
+    if (importedArray.length > 0) {
+      setCurrentLocation(importedArray[0]);
+    }
+    showToast(`Successfully imported ${importedArray.length} location records!`);
+  };
+
+  // Auto-Geocode lookup helper using OpenWeather Geocoding API
+  const geocodeCity = async (cityQuery) => {
+    if (!cityQuery) return null;
+    try {
+      const res = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(cityQuery)}&limit=1&appid=${API_KEY}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          return {
+            name: data[0].name,
+            state: data[0].state || data[0].country || '',
+            lat: data[0].lat,
+            lon: data[0].lon
+          };
+        }
+      }
+    } catch (err) {
+      console.error('Error geocoding city:', err);
+    }
+    return null;
   };
 
   return (
@@ -166,12 +298,20 @@ export function WeatherProvider({ children }) {
         setSearchQuery,
         isDbmsModalOpen,
         setIsDbmsModalOpen,
+        isMapPickerActive,
+        setIsMapPickerActive,
+        pickedCoords,
+        setPickedCoords,
         toasts,
         showToast,
         formatTemp,
         selectLocation,
         addLocation,
+        updateLocation,
         deleteLocation,
+        exportToJson,
+        importLocations,
+        geocodeCity,
         fetchTelemetry
       }}
     >

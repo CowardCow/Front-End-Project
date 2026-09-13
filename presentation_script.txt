@@ -1,0 +1,106 @@
+﻿================================================================================
+          DESH DEKHO - PRESENTATION SCRIPT (SLIDES 6 TO 9)
+================================================================================
+
+[STARTING YOUR TURN / INTRODUCTION]
+"Hello everyone and respected teacher. 
+I will be speaking on slides 6 to 9. 
+In these slides, I will explain our key features, the technology stack we used, 
+and show you our login and signup screens."
+
+--------------------------------------------------------------------------------
+[SLIDE 6: KEY FEATURES]
+--------------------------------------------------------------------------------
+"Starting with Slide 6: Key Features of our project, Desh Dekho.
+
+Our website has four main feature areas:
+
+1. Interactive Map:
+   We used Leaflet map, which lets users smoothly zoom in, zoom out, and move 
+   around India. You can click anywhere on the map to pick coordinates, and 
+   you can switch between normal street view and satellite view.
+
+2. Live Weather and Air Quality:
+   The website shows real-time weather information such as current temperature, 
+   humidity, wind speed, and pressure. It also shows the Air Quality Index, or 
+   AQI, which tells you how clean or polluted the air is. Users also get a 
+   5-day weather forecast, and they can easily switch between Celsius and Fahrenheit.
+
+3. Location Management:
+   Users can easily Create, View, Edit, and Delete their favorite places. 
+   If you type any city name, the system automatically finds the exact place 
+   using the OpenWeather API. You can also save or export your places as a 
+   simple JSON file.
+
+4. Modern and Safe User Experience:
+   We have a secure login and signup system that stores user data in the 
+   browser. The interface has a modern, clean glass-like look, and helpful 
+   popup messages appear on screen to guide the user."
+
+
+--------------------------------------------------------------------------------
+[SLIDE 7: TECH STACK USED]
+--------------------------------------------------------------------------------
+"Moving on to Slide 7: Tech Stack Used.
+
+Here are the main technologies we used to build Desh Dekho:
+
+1. On the Front-End:
+   - React 18: We used React to build reusable and fast UI components.
+   - Vite: We used Vite as our build tool. It makes the project load and run 
+     very quickly.
+   - Leaflet.js: This is the library powering our interactive map.
+   - HTML5, CSS3, and Lucide Icons: Used for the clean layout, glass design, 
+     and simple icons.
+
+2. On the Back-End:
+   - Node.js: We created a lightweight server using Node.js and a REST API.
+   - File System Module (FS): Used to read and save saved locations directly 
+     into a file called locations_db.json.
+   - Browser LocalStorage: Used to save user account details locally inside 
+     the browser.
+
+3. External APIs:
+   - OpenWeather API: This is the core API that gives us live weather data, 
+     5-day forecasts, air pollution metrics, and city search coordinates.
+   - We also used NPM (Node Package Manager) to manage all our project packages."
+
+
+--------------------------------------------------------------------------------
+[SLIDE 8: LOGIN PAGE]
+--------------------------------------------------------------------------------
+"Now coming to Slide 8: The Login Page.
+
+This slide shows the screenshot of our login screen:
+
+- It features a clean, dark card in the center with a modern glass style.
+- Users can enter their Username and Password to log in.
+- We added a small eye button inside the password box so users can easily 
+  hide or show their password.
+- Below the login button, there is a 'Forgot Password' hint that can remind 
+  the user of test credentials if they forget them.
+- And if someone is a new user and does not have an account yet, they can 
+  simply click the 'Sign Up' link at the bottom to open the registration screen."
+
+
+--------------------------------------------------------------------------------
+[SLIDE 9: SIGNUP PAGE]
+--------------------------------------------------------------------------------
+"Next is Slide 9: The Signup Page.
+
+This slide shows our user registration screen:
+
+- It has the exact same clean and simple design as the login screen.
+- A new user can enter a username and password to create a new account.
+- When they click the 'Sign Up' button, the account is saved safely in the 
+  browser's local storage.
+- A friendly popup message appears instantly to confirm that the account 
+  was created successfully.
+- From here, the user can click the 'Login' link at the bottom to easily 
+  switch back to the login page and sign in.
+
+This makes the whole login and signup flow very easy and smooth for anyone to use.
+
+Now, I would like to hand over to my teammate for the next slides. 
+Thank you!"
+================================================================================

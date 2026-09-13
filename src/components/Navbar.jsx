@@ -4,7 +4,7 @@ import { useWeather } from '../context/WeatherContext';
 
 export default function Navbar({ activeView, setActiveView }) {
   const { isLoggedIn, currentUser, logout } = useAuth();
-  const { isFahrenheit, setIsFahrenheit, showToast } = useWeather();
+  const { isFahrenheit, setIsFahrenheit, setIsDbmsModalOpen, showToast } = useWeather();
 
   const toggleUnit = () => {
     setIsFahrenheit(prev => {
@@ -80,6 +80,20 @@ export default function Navbar({ activeView, setActiveView }) {
           >
             ⚡ Quick Search
           </button>
+          <button
+            onClick={() => setActiveView('welcome')}
+            style={{
+              background: activeView === 'welcome' ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+              border: `1px solid ${activeView === 'welcome' ? 'var(--accent-cyan)' : 'transparent'}`,
+              color: activeView === 'welcome' ? 'var(--accent-cyan)' : 'var(--text-sub)',
+              padding: '6px 14px',
+              borderRadius: '12px',
+              fontSize: '0.88rem',
+              fontWeight: 600
+            }}
+          >
+            👤 Dashboard
+          </button>
         </div>
       )}
 
@@ -112,6 +126,23 @@ export default function Navbar({ activeView, setActiveView }) {
             }}>
               👤 {currentUser}
             </div>
+
+            <button
+              onClick={() => setIsDbmsModalOpen(true)}
+              style={{
+                background: 'linear-gradient(135deg, #6366f1, #a855f7)',
+                border: 'none',
+                color: 'white',
+                padding: '7px 16px',
+                borderRadius: '12px',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(168, 85, 247, 0.3)'
+              }}
+            >
+              🗄️ DBMS Manager
+            </button>
 
             <button
               onClick={() => {
