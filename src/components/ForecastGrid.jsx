@@ -2,15 +2,28 @@ import React from 'react';
 import { useWeather } from '../context/WeatherContext';
 
 export default function ForecastGrid() {
-  const { forecastData, formatTemp, loadingWeather, currentLocation } = useWeather();
+  const {
+    forecastData,
+    formatTemp,
+    loadingWeather,
+    currentLocation
+  } = useWeather();
 
-  // If loading or no data yet, show a clean skeleton loader instead of popping in abruptly
+  // Show skeleton cards while the forecast is loading.
   if (loadingWeather && (!forecastData || forecastData.length === 0)) {
     return (
       <div style={{ marginTop: '24px' }}>
-        <div style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '14px', color: 'var(--text-main)' }}>
+        <div
+          style={{
+            fontSize: '1.1rem',
+            fontWeight: 600,
+            marginBottom: '14px',
+            color: 'var(--text-main)'
+          }}
+        >
           📅 Loading 5-Day Forecast...
         </div>
+
         <div
           style={{
             display: 'grid',
@@ -22,8 +35,8 @@ export default function ForecastGrid() {
             <div
               key={i}
               style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.06)',
+                background: 'var(--card-bg)',
+                border: '1px solid var(--card-border)',
                 borderRadius: '16px',
                 height: '140px',
                 animation: 'pulse 1.5s infinite ease-in-out'
@@ -54,7 +67,7 @@ export default function ForecastGrid() {
         📅 5-Day Weather Forecast for {currentLocation?.name || 'Selected Area'}
       </div>
 
-      {/* Grid */}
+      {/* Forecast Grid */}
       <div
         style={{
           display: 'grid',
@@ -64,11 +77,13 @@ export default function ForecastGrid() {
       >
         {forecastData.map((item) => {
           const dateObj = new Date(item.dt * 1000);
+
           const dateStr = dateObj.toLocaleDateString('en-US', {
             weekday: 'short',
             month: 'short',
             day: 'numeric'
           });
+
           const temp = item.main?.temp;
           const condition = item.weather?.[0]?.description || 'Clear';
           const iconCode = item.weather?.[0]?.icon || '02d';
@@ -115,7 +130,13 @@ export default function ForecastGrid() {
               />
 
               {/* Temperature */}
-              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)' }}>
+              <div
+                style={{
+                  fontSize: '1.2rem',
+                  fontWeight: 700,
+                  color: 'var(--text-main)'
+                }}
+              >
                 {temp !== undefined ? formatTemp(temp) : '--'}
               </div>
 

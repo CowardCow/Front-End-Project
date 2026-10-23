@@ -2,7 +2,7 @@ import React from 'react';
 import { useWeather } from '../context/WeatherContext';
 
 // Estimated India/CPCB-style AQI from OpenWeather pollutant concentrations.
-// OpenWeather's own AQI field is a 1-5 index, so it is not displayed as a 0-500 India AQI.
+// OpenWeather's own AQI field is a 1–5 index, so it is not displayed as a 0–500 India AQI.
 const BREAKPOINTS = {
   pm2_5: [[0, 30, 0, 50], [31, 60, 51, 100], [61, 90, 101, 200], [91, 120, 201, 300], [121, 250, 301, 400], [251, Infinity, 401, 500]],
   pm10: [[0, 50, 0, 50], [51, 100, 51, 100], [101, 250, 101, 200], [251, 350, 201, 300], [351, 430, 301, 400], [431, Infinity, 401, 500]],
@@ -14,71 +14,229 @@ const BREAKPOINTS = {
 };
 
 function subIndex(value, ranges) {
-  if (value === undefined || value === null || Number.isNaN(Number(value))) return null;
-  const c = Number(value);
-  const bp = ranges.find(([lo, hi]) => c >= lo && c <= hi) || ranges[ranges.length - 1];
-  const [cLow, cHigh, iLow, iHigh] = bp;
-  return Math.round(((iHigh - iLow) / (cHigh - cLow)) * (c - cLow) + iLow);
+  if (value === undefined || value === null || Number.isNaN(Number(value))) {
+    return null;
+  }
+
+  const concentration = Number(value);
+  const breakpoint =
+    ranges.find(([low, high]) => concentration >= low && concentration <= high) ||
+    ranges[ranges.length - 1];
+
+  const [cLow, cHigh, iLow, iHigh] = breakpoint;
+
+  return Math.round(
+    ((iHigh - iLow) / (cHigh - cLow)) * (concentration - cLow) + iLow
+  );
 }
 
 function getAqi(components) {
   const values = { ...components };
-  // OpenWeather gives CO in µg/m³; CPCB CO breakpoints are commonly expressed in mg/m³.
-  if (values.co != null) values.co = Number(values.co) / 1000;
+
+  // OpenWeather provides CO in µg/m³; these breakpoints use mg/m³.
+  if (values.co != null) {
+    values.co = Number(values.co) / 1000;
+  }
 
   const indices = {};
-  Object.keys(BREAKPOINTS).forEach(key => {
+
+  Object.keys(BREAKPOINTS).forEach((key) => {
     const index = subIndex(values[key], BREAKPOINTS[key]);
-    if (index !== null) indices[key] = Math.min(500, Math.max(0, index));
+
+    if (index !== null) {
+      indices[key] = Math.min(500, Math.max(0, index));
+    }
   });
 
   const entries = Object.entries(indices);
-  if (!entries.length) return { value: null, pollutant: null };
+
+  if (!entries.length) {
+    return { value: null, pollutant: null };
+  }
+
   entries.sort((a, b) => b[1] - a[1]);
+
   return { value: entries[0][1], pollutant: entries[0][0] };
 }
 
 function getAqiDetails(value) {
-  if (value === null) return { label: 'AQI unavailable', desc: 'Air-quality data is not available for this location.', bg: '#64748b', color: '#fff' };
-  if (value <= 50) return { label: `${value} - Good 🟢`, desc: 'Air quality is satisfactory and poses little or no risk.', bg: '#10b981', color: '#fff' };
-  if (value <= 100) return { label: `${value} - Satisfactory 🟡`, desc: 'Air quality is acceptable; unusually sensitive people may be affected.', bg: '#84cc16', color: '#000' };
-  if (value <= 200) return { label: `${value} - Moderate 🟠`, desc: 'Sensitive groups may experience health effects.', bg: '#f59e0b', color: '#000' };
-  if (value <= 300) return { label: `${value} - Poor 🔴`, desc: 'Health effects may be experienced by the general population.', bg: '#ef4444', color: '#fff' };
-  if (value <= 400) return { label: `${value} - Very Poor 🟣`, desc: 'Health alert: increased likelihood of adverse effects.', bg: '#8b5cf6', color: '#fff' };
-  return { label: `${value} - Severe ⚫`, desc: 'Health warning of emergency conditions.', bg: '#111827', color: '#fff' };
+  if (value === null) {
+    return {
+      label: 'AQI unavailable',
+      desc: 'Air-quality data is not available for this location.',
+      bg: '#64748b',
+      color: '#fff'
+    };
+  }
+
+  if (value <= 50) {
+    return {
+      label: `${value} - Good 🟢`,
+      desc: 'Air quality is satisfactory and poses little or no risk.',
+      bg: '#10b981',
+      color: '#fff'
+    };
+  }
+
+  if (value <= 100) {
+    return {
+      label: `${value} - Satisfactory 🟡`,
+      desc: 'Air quality is acceptable; unusually sensitive people may be affected.',
+      bg: '#84cc16',
+      color: '#000'
+    };
+  }
+
+  if (value <= 200) {
+    return {
+      label: `${value} - Moderate 🟠`,
+      desc: 'Sensitive groups may experience health effects.',
+      bg: '#f59e0b',
+      color: '#000'
+    };
+  }
+
+  if (value <= 300) {
+    return {
+      label: `${value} - Poor 🔴`,
+      desc: 'Health effects may be experienced by the general population.',
+      bg: '#ef4444',
+      color: '#fff'
+    };
+  }
+
+  if (value <= 400) {
+    return {
+      label: `${value} - Very Poor 🟣`,
+      desc: 'Health alert: increased likelihood of adverse effects.',
+      bg: '#8b5cf6',
+      color: '#fff'
+    };
+  }
+
+  return {
+    label: `${value} - Severe ⚫`,
+    desc: 'Health warning of emergency conditions.',
+    bg: '#111827',
+    color: '#fff'
+  };
 }
 
 export default function AqiCard() {
   const { aqiData } = useWeather();
+
   if (!aqiData) return null;
 
   const components = aqiData.components || {};
   const { value, pollutant } = getAqi(components);
   const aqiInfo = getAqiDetails(value);
-  const pollutantNames = { pm2_5: 'PM2.5', pm10: 'PM10', no2: 'NO₂', so2: 'SO₂', o3: 'O₃', nh3: 'NH₃', co: 'CO' };
+
+  const pollutantNames = {
+    pm2_5: 'PM2.5',
+    pm10: 'PM10',
+    no2: 'NO₂',
+    so2: 'SO₂',
+    o3: 'O₃',
+    nh3: 'NH₃',
+    co: 'CO'
+  };
 
   return (
-    <div style={{
-      marginTop: '20px', background: 'var(--input-bg)', border: '1px solid var(--card-border)',
-      borderRadius: '18px', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px'
-    }}>
+    <div
+      style={{
+        marginTop: '20px',
+        background: 'var(--input-bg)',
+        border: '1px solid var(--card-border)',
+        borderRadius: '18px',
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}
+    >
       <div>
-        <h4 style={{ fontSize: '0.95rem', color: 'var(--text-sub)', marginBottom: '4px' }}>Air Quality Index (India estimate)</h4>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
-          <span style={{ display: 'inline-block', padding: '4px 14px', borderRadius: '12px', fontWeight: 700, fontSize: '0.9rem', background: aqiInfo.bg, color: aqiInfo.color }}>
+        <h4
+          style={{
+            fontSize: '0.95rem',
+            color: 'var(--text-sub)',
+            marginBottom: '4px'
+          }}
+        >
+          Air Quality Index (India estimate)
+        </h4>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            marginTop: '4px',
+            flexWrap: 'wrap'
+          }}
+        >
+          <span
+            style={{
+              display: 'inline-block',
+              padding: '4px 14px',
+              borderRadius: '12px',
+              fontWeight: 700,
+              fontSize: '0.9rem',
+              background: aqiInfo.bg,
+              color: aqiInfo.color
+            }}
+          >
             {aqiInfo.label}
           </span>
-          <span style={{ fontSize: '0.82rem', color: 'var(--text-sub)' }}>{aqiInfo.desc}</span>
+
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-sub)' }}>
+            {aqiInfo.desc}
+          </span>
         </div>
-        {pollutant && <div style={{ marginTop: '6px', fontSize: '0.72rem', color: 'var(--text-sub)' }}>Dominant pollutant: {pollutantNames[pollutant]}</div>}
+
+        {pollutant && (
+          <div
+            style={{
+              marginTop: '6px',
+              fontSize: '0.72rem',
+              color: 'var(--text-sub)'
+            }}
+          >
+            Dominant pollutant: {pollutantNames[pollutant]}
+          </div>
+        )}
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', fontSize: '0.8rem', color: 'var(--text-main)', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '12px',
+          fontSize: '0.8rem',
+          color: 'var(--text-main)',
+          flexWrap: 'wrap'
+        }}
+      >
         {[
-          ['PM2.5', 'pm2_5', 'µg/m³'], ['PM10', 'pm10', 'µg/m³'], ['NO₂', 'no2', 'µg/m³'], ['O₃', 'o3', 'µg/m³']
+          ['PM2.5', 'pm2_5', 'µg/m³'],
+          ['PM10', 'pm10', 'µg/m³'],
+          ['NO₂', 'no2', 'µg/m³'],
+          ['O₃', 'o3', 'µg/m³']
         ].map(([label, key, unit]) => (
-          <span key={key} style={{ background: 'var(--card-bg)', padding: '4px 8px', borderRadius: '8px', border: '1px solid var(--card-border)', color: 'var(--text-main)' }}>
-            {label}: {components[key] != null ? `${Number(components[key]).toFixed(1)} ${unit}` : '--'}
+          <span
+            key={key}
+            style={{
+              background: 'var(--card-bg)',
+              padding: '4px 8px',
+              borderRadius: '8px',
+              border: '1px solid var(--card-border)',
+              color: 'var(--text-main)'
+            }}
+          >
+            {label}:{' '}
+            {components[key] != null
+              ? `${Number(components[key]).toFixed(1)} ${unit}`
+              : '--'}
           </span>
         ))}
       </div>

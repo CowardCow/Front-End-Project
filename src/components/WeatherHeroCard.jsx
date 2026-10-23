@@ -2,7 +2,12 @@ import React from 'react';
 import { useWeather } from '../context/WeatherContext';
 
 export default function WeatherHeroCard() {
-  const { currentLocation, weatherData, loadingWeather, formatTemp } = useWeather();
+  const {
+    currentLocation,
+    weatherData,
+    loadingWeather,
+    formatTemp
+  } = useWeather();
 
   if (!currentLocation) {
     return (
@@ -28,14 +33,15 @@ export default function WeatherHeroCard() {
   const humidity = weatherData?.main?.humidity;
   const windSpeed = weatherData?.wind?.speed;
   const pressure = weatherData?.main?.pressure;
-  const condition = weatherData?.weather?.[0]?.description || 'Loading weather...';
+  const condition =
+    weatherData?.weather?.[0]?.description || 'Loading weather...';
   const iconCode = weatherData?.weather?.[0]?.icon || '02d';
   const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
 
-  // Safe formatting for coordinates
   const formattedLat = !isNaN(Number(currentLocation.lat))
     ? Number(currentLocation.lat).toFixed(4)
     : '--';
+
   const formattedLon = !isNaN(Number(currentLocation.lon))
     ? Number(currentLocation.lon).toFixed(4)
     : '--';
@@ -53,7 +59,7 @@ export default function WeatherHeroCard() {
         position: 'relative'
       }}
     >
-      {/* Loading Indicator Pill */}
+      {/* Loading Indicator */}
       {loadingWeather && (
         <div
           style={{
@@ -79,9 +85,17 @@ export default function WeatherHeroCard() {
         }}
       >
         <div>
-          <h2 style={{ fontSize: '2.2rem', fontWeight: 700, color: 'var(--text-main)', margin: 0 }}>
+          <h2
+            style={{
+              fontSize: '2.2rem',
+              fontWeight: 700,
+              color: 'var(--text-main)',
+              margin: 0
+            }}
+          >
             {currentLocation.name}
           </h2>
+
           <p
             style={{
               color: 'var(--accent-cyan, #38bdf8)',
@@ -93,12 +107,19 @@ export default function WeatherHeroCard() {
           >
             State: {currentLocation.state || 'India'}
           </p>
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-sub, #94a3b8)', marginTop: '6px' }}>
+
+          <div
+            style={{
+              fontSize: '0.85rem',
+              color: 'var(--text-sub, #94a3b8)',
+              marginTop: '6px'
+            }}
+          >
             Lat: {formattedLat} | Lon: {formattedLon}
           </div>
         </div>
 
-        {/* Temperature & Icon */}
+        {/* Temperature and Icon */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
           <img
             src={iconUrl}
@@ -109,10 +130,19 @@ export default function WeatherHeroCard() {
               filter: 'drop-shadow(0 4px 12px rgba(56, 189, 248, 0.4))'
             }}
           />
+
           <div>
-            <div style={{ fontSize: '4.2rem', fontWeight: 800, lineHeight: 1, color: 'var(--text-main)' }}>
+            <div
+              style={{
+                fontSize: '4.2rem',
+                fontWeight: 800,
+                lineHeight: 1,
+                color: 'var(--text-main)'
+              }}
+            >
               {temp !== undefined ? formatTemp(temp) : '--'}
             </div>
+
             <div
               style={{
                 fontSize: '1.1rem',
@@ -128,7 +158,7 @@ export default function WeatherHeroCard() {
         </div>
       </div>
 
-      {/* Metrics Grid */}
+      {/* Weather Metrics */}
       <div
         style={{
           display: 'grid',
@@ -137,77 +167,64 @@ export default function WeatherHeroCard() {
           marginTop: '24px'
         }}
       >
-        <div
-          style={{
-            background: 'var(--input-bg)',
-            border: '1px solid var(--card-border)',
-            borderRadius: '16px',
-            padding: '16px',
-            textAlign: 'center'
-          }}
-        >
-          <div style={{ fontSize: '1.2rem', marginBottom: '6px' }}>🌡️</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub, #94a3b8)', textTransform: 'uppercase' }}>
-            Feels Like
-          </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '4px' }}>
-            {feelsLike !== undefined ? formatTemp(feelsLike) : '--'}
-          </div>
-        </div>
+        {[
+          {
+            icon: '🌡️',
+            label: 'Feels Like',
+            value: feelsLike !== undefined ? formatTemp(feelsLike) : '--'
+          },
+          {
+            icon: '💧',
+            label: 'Humidity',
+            value: humidity !== undefined ? `${humidity}%` : '--'
+          },
+          {
+            icon: '💨',
+            label: 'Wind Speed',
+            value: windSpeed !== undefined ? `${windSpeed} m/s` : '--'
+          },
+          {
+            icon: '⏲️',
+            label: 'Pressure',
+            value: pressure !== undefined ? `${pressure} hPa` : '--'
+          }
+        ].map(({ icon, label, value }) => (
+          <div
+            key={label}
+            style={{
+              background: 'var(--input-bg)',
+              border: '1px solid var(--card-border)',
+              borderRadius: '16px',
+              padding: '16px',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ fontSize: '1.2rem', marginBottom: '6px' }}>
+              {icon}
+            </div>
 
-        <div
-          style={{
-            background: 'var(--input-bg)',
-            border: '1px solid var(--card-border)',
-            borderRadius: '16px',
-            padding: '16px',
-            textAlign: 'center'
-          }}
-        >
-          <div style={{ fontSize: '1.2rem', marginBottom: '6px' }}>💧</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub, #94a3b8)', textTransform: 'uppercase' }}>
-            Humidity
-          </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '4px' }}>
-            {humidity !== undefined ? `${humidity}%` : '--'}
-          </div>
-        </div>
+            <div
+              style={{
+                fontSize: '0.75rem',
+                color: 'var(--text-sub, #94a3b8)',
+                textTransform: 'uppercase'
+              }}
+            >
+              {label}
+            </div>
 
-        <div
-          style={{
-            background: 'var(--input-bg)',
-            border: '1px solid var(--card-border)',
-            borderRadius: '16px',
-            padding: '16px',
-            textAlign: 'center'
-          }}
-        >
-          <div style={{ fontSize: '1.2rem', marginBottom: '6px' }}>💨</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub, #94a3b8)', textTransform: 'uppercase' }}>
-            Wind Speed
+            <div
+              style={{
+                fontSize: '1.2rem',
+                fontWeight: 700,
+                color: 'var(--text-main)',
+                marginTop: '4px'
+              }}
+            >
+              {value}
+            </div>
           </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '4px' }}>
-            {windSpeed !== undefined ? `${windSpeed} m/s` : '--'}
-          </div>
-        </div>
-
-        <div
-          style={{
-            background: 'var(--input-bg)',
-            border: '1px solid var(--card-border)',
-            borderRadius: '16px',
-            padding: '16px',
-            textAlign: 'center'
-          }}
-        >
-          <div style={{ fontSize: '1.2rem', marginBottom: '6px' }}>⏲️</div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub, #94a3b8)', textTransform: 'uppercase' }}>
-            Pressure
-          </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-main)', marginTop: '4px' }}>
-            {pressure !== undefined ? `${pressure} hPa` : '--'}
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
