@@ -1,96 +1,99 @@
-# 🌤️ Codeverse Weather Portal & Location DBMS (React + Vite Edition)
+# 🇮🇳 Desh Dekho — Weather Portal & Location DBMS (React 18 + Redux Toolkit + React Router)
 
-A modern, feature-rich weather monitoring dashboard and location **Database Management System (DBMS)** rebuilt from the ground up with **React 18**, **Vite**, **Leaflet.js**, **OpenWeatherMap API**, and a custom **Node.js REST API backend**.
+**Department of Computer Science & Engineering, Chitkara University Institute of Engineering & Technology**  
+**Course Code:** 25CSE0203 • **Course Title:** Front End Engineering-II  
+**Evaluation:** Project-based Evaluation-II (Test No: 2 • Total Marks: 30)  
+
+A production-grade, responsive geospatial weather monitoring platform and location **Database Management System (DBMS)** built with **React 18**, **Vite**, **React Router v6**, **Redux Toolkit**, **Context API**, **Leaflet.js**, **OpenWeatherMap API**, and a custom **Node.js REST API backend**.
 
 ---
 
-## ✨ Features
+## 🎯 Evaluation Rubric Breakdown (Annexure-A Aligned)
 
-### ⚛️ Modern React 18 Architecture
-- **Componentized Design System**: Clean, modular structure (`Navbar`, `InteractiveMap`, `WeatherHeroCard`, `AqiCard`, `ForecastGrid`, `DbmsModal`, `QuickSearch`, `LoginView`, `WelcomeView`).
-- **React Context API**: Powered by `AuthContext` (session management) and `WeatherContext` (telemetry state, DBMS operations, toasts, unit toggling).
+| Rubric Component | Marks | Features Implemented |
+| :--- | :---: | :--- |
+| **Presentation (Component 1)** | **5 Marks** | Structured presentation walkthrough, high engagement visual aids, viva preparation guide (`EXAM_VIVA_GUIDE.md`). |
+| **React Navigation Layout & Page Structure** | **7-8 Marks** | Multi-page SPA navigation using `react-router-dom` v6 (`Routes`, `Route`, `NavLink`, `useNavigate`, `ProtectedRoute`, 404 fallback). Clean, modular layout with header, active links, and guards. |
+| **Context API & State Architecture** | **6-8 Marks** | Clean separation of Local State (`useState`), Context API (`AuthContext`, `ThemeContext` for dynamic Dark/Light modes, `WeatherContext` for global telemetry, async loading spinners & error handling). |
+| **Intro to Redux Toolkit** | **3-5 Marks** | Redux Toolkit store (`configureStore`), `favoritesSlice` (pinning & bookmarking locations with localStorage sync), `comparisonSlice` with `createAsyncThunk` (handling pending, fulfilled, rejected lifecycle), and a live floating **Redux Inspector** widget. |
+| **Form Handling in React** | **3-4 Marks** | Reusable input components (`TextInput`, `SelectInput`, `TextAreaInput`, `CheckboxInput`, `Button`) with `useFormValidation` custom hook supporting real-time validation, coordinate bounds (-90 to 90, -180 to 180), email regex, and touch states. |
 
-### 🗺️ Interactive Map & Coordinate Picker
-- **Leaflet Dark Vector Map**: Smooth panning, zooming, and location markers across India and worldwide coordinates.
-- **Satellite Imagery Toggle**: Toggle between CartoDB dark vector basemap and Esri high-resolution satellite imagery.
-- **Map Click Coordinate Picker**: Click anywhere on the map to auto-capture latitude and longitude for custom locations.
+---
 
-### 🌤️ Weather & Environmental Intelligence
-- **Real-Time Weather Metrics**: Live temperature, feels-like temperature, humidity, wind speed, and atmospheric pressure.
-- **📅 5-Day Weather Forecast**: Daily forecast summaries with weather condition icons and temperatures.
-- **🍃 Air Quality Index (AQI)**: Color-coded air quality status badges (Good 🟢, Fair 🟡, Moderate 🟧, Poor 🔴, Very Poor 🟣) with PM2.5, PM10, NO2, and O3 pollutant breakdown.
-- **🌡️ Temperature Unit Switcher**: Toggle dynamically between Celsius (°C) and Fahrenheit (°F).
+## ✨ Feature Highlights
 
-### 🗄️ Location DBMS (Database Management System)
-- **Full CRUD Operations**:
-  - **Create**: Add custom monitoring locations with category tags.
-  - **Read**: Search, filter, and load telemetry for saved locations.
-  - **Update (`PUT`)**: Edit existing location details in real-time.
-  - **Delete (`DELETE`)**: Remove location records from persistent storage.
-- **🔍 Auto-Geocode City Lookup**: Search any city worldwide (e.g. *Manali, Tokyo, London*) to auto-fetch coordinates using OpenWeather Geocoding API.
-- **📥 JSON Database Export & Import**: One-click JSON backup file export and import.
-- **🔔 Toast Notification System**: Glassmorphism toast alerts giving real-time feedback for DBMS actions.
+### 🧭 Multi-Page SPA Routing (`react-router-dom`)
+- **`/portal`**: Interactive Leaflet vector map with live weather metrics, air quality breakdown, 5-day forecast, and Google Maps embed.
+- **`/locations`**: Master database management page with searchable/sortable table and cards, category filters, and Redux bookmarking.
+- **`/analytics`**: Multi-city comparative weather telemetry powered by Redux Toolkit `createAsyncThunk`.
+- **`/quick-search`**: Instant global city weather lookup with one-click DBMS saving.
+- **`/report`**: Citizen weather incident reporting form demonstrating reusable form components and validation strategies.
+- **`/login`**: Secure authentication gateway with login and sign-up modes.
+- **`*`**: Custom 404 Not Found error page with navigation back to the portal.
+
+### 🌐 Context API Architecture
+- **`AuthContext`**: Manages user authentication, session persistence in `localStorage`, login, signup, and logout.
+- **`ThemeContext`**: Dynamic Light / Dark mode toggle across the entire UI with custom CSS variables.
+- **`WeatherContext`**: Global telemetry state, unit conversion (°C / °F), coordinate picker, and toast notification queues.
+
+### ⚡ Redux Toolkit (`@reduxjs/toolkit` & `react-redux`)
+- **`favoritesSlice`**: Manages favorite pinned locations with actions (`addFavorite`, `removeFavorite`, `toggleFavorite`, `clearFavorites`) and `localStorage` persistence.
+- **`comparisonSlice`**: Leverages `createAsyncThunk` (`fetchCityTelemetry`) to fetch and compare multiple cities asynchronously, handling `pending`, `fulfilled`, and `rejected` states.
+- **`ReduxInspector`**: Live floating widget in the application that allows examiners to inspect the Redux store state in real-time.
+
+### 📝 Form Handling & Custom Validation Hook
+- **Modular Components**: `TextInput`, `SelectInput`, `TextAreaInput`, `CheckboxInput`, `Button` with accessible error indicators (`role="alert"`).
+- **`useFormValidation`**: Custom hook supporting touched field tracking, real-time validation on change & blur, email regex checking, and coordinate boundary enforcement.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: React 18, Vite, CSS3 Glassmorphic Design System, Outfit Google Font
-- **Mapping Library**: Leaflet.js, OpenStreetMap / CARTO Basemaps / Esri Satellite
-- **Weather API**: OpenWeatherMap API (Current Weather, 5-Day Forecast, Air Pollution, Direct Geocoding)
-- **Backend API**: Node.js HTTP Server (`server.js`) with REST API endpoints & static SPA serving
-- **Data Storage**: Persistent `locations_db.json` storage + LocalStorage fallback
+- **Frontend**: React 18, React Router v6, Redux Toolkit, React-Redux, Vite, CSS3 Glassmorphism
+- **Mapping**: Leaflet.js, OpenStreetMap, CARTO Dark Basemap, Esri Satellite Imagery
+- **APIs**: OpenWeatherMap API (Current Weather, 5-Day Forecast, Air Pollution, Direct Geocoding)
+- **Backend API**: Node.js HTTP Server (`server.js`) with REST endpoints and SPA fallback
+- **Storage**: Persistent `locations_db.json` storage + LocalStorage synchronization
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Running the Project Locally
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v16+ recommended) installed on your system.
+- [Node.js](https://nodejs.org/) (v16+ recommended)
 
-### Running the Application
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
+### 2. Build the Production Bundle
+```bash
+npm run build
+```
 
-2. **Build the Production Bundle**:
-   ```bash
-   npm run build
-   ```
+### 3. Start the Backend Server & Web Application
+```bash
+npm start
+```
+Open your browser at: **`http://localhost:3000`**
 
-3. **Start the REST Backend & Production App**:
-   ```bash
-   npm start
-   ```
-   Open `http://localhost:3000` in your web browser.
+### 4. Development Mode (Hot Reload)
+```bash
+npm run dev
+```
+Accessible at: **`http://localhost:5173`**
 
-4. **Development Mode (Vite Dev Server)**:
-   ```bash
-   npm run dev
-   ```
-
-5. **Default Login Credentials**:
-   - **Username**: `admin`
-   - **Password**: `password`
-   *(Or click "Sign Up" to create a new user account)*.
-
----
-
-## 📡 REST API Endpoints
-
-The Node.js server exposes the following endpoints at `http://localhost:3000`:
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/locations` | Retrieve all stored location records |
-| `POST` | `/api/locations` | Add a new location record |
-| `PUT` | `/api/locations/:id` | Update an existing location record by ID |
-| `DELETE` | `/api/locations/:id` | Delete a location record by ID |
+### Default Login Credentials:
+- **Username:** `admin`
+- **Password:** `password`
+*(Or click "Sign Up" to register a new user account)*
 
 ---
 
-## 📝 License
+## 📚 Viva Preparation
 
-This project is open-source and available under the MIT License.
+A complete viva preparation guide is provided in [`EXAM_VIVA_GUIDE.md`](file:///d:/ce2projfee/EXAM_VIVA_GUIDE.md). It contains:
+- 3-minute presentation script for full 5/5 marks in Presentation.
+- Code pointers for all 4 project rubrics.
+- Model answers for anticipated viva questions on React Router, Context API vs Redux Toolkit, `createAsyncThunk`, and controlled form validation.

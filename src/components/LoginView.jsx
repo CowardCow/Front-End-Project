@@ -1,41 +1,115 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWeather } from '../context/WeatherContext';
+import { useNavigate } from 'react-router-dom';
+import TextInput from './common/form/TextInput';
+import Button from './common/form/Button';
 
-export default function LoginView({ setActiveView }) {
+export default function LoginView() {
   const [isSignUpMode, setIsSignUpMode] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { login, signup } = useAuth();
   const { showToast } = useWeather();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!username.trim() || !password.trim()) {
-      showToast('Please enter both username and password.', 'error');
-      return;
+  const validate = () => {
+    const errors = {};
+    const cleanUser = username.trim();
+    const cleanPass = password.trim();
+
+    if (!cleanUser) {
+      errors.username = 'Username is required.';
+    } else if (cleanUser.length < 3) {
+      errors.username = 'Username must be at least 3 characters.';
+    }
+
+    if (!cleanPass) {
+      errors.password = 'Password is required.';
+    } else if (cleanPass.length < 6) {
+      errors.password = 'Password must be at least 6 characters.';
     }
 
     if (isSignUpMode) {
-      const res = signup(username.trim(), password.trim());
-      if (res.success) {
-        showToast(res.message, 'success');
-        setIsSignUpMode(false);
-        setPassword('');
-      } else {
-        showToast(res.message, 'error');
-      }
-    } else {
-      const res = login(username.trim(), password.trim());
-      if (res.success) {
-        showToast(res.message, 'success');
-        setActiveView('portal');
-      } else {
-        showToast(res.message, 'error');
+      if (!confirmPassword.trim()) {
+        errors.confirmPassword = 'Please confirm your password.';
+      } else if (confirmPassword !== password) {
+        errors.confirmPassword = 'Passwords do not match.';
       }
     }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!validate()) {
+      showToast('Please fix highlighted errors before continuing.', 'error');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (isSignUpMode) {
+        const res = signup(username, password);
+        if (res.success) {
+          showToast(res.message, 'success');
+          setIsSignUpMode(false);
+          setPassword('');
+          setConfirmPassword('');
+          setFormErrors({});
+        } else {
+          showToast(res.message, 'error');
+        }
+      } else {
+        const res = login(username, password);
+        if (res.success) {
+          showToast(res.message, 'success');
+          navigate('/portal');
+        } else {
+          showToast(res.message, 'error');
+        }
+      }
+    } catch (err) {
+      showToast(`Error: ${err.message}`, 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleQuickFillAdmin = () => {
+    setUsername('admin');
+    setPassword('password');
+    setConfirmPassword('');
+    setFormErrors({});
+    showToast('Auto-filled default admin credentials! Click "Login to Portal".', 'success');
+  };
+
+  const handleResetLocalStorage = () => {
+    try {
+      localStorage.setItem('users', JSON.stringify({ admin: 'password' }));
+      localStorage.removeItem('isLoggedIn');
+      localStorage.removeItem('currentUser');
+      setUsername('admin');
+      setPassword('password');
+      setFormErrors({});
+      showToast('LocalStorage credentials reset! Default user: admin / password', 'success');
+    } catch (err) {
+      showToast('Failed to reset localStorage.', 'error');
+    }
+  };
+
+  const toggleMode = () => {
+    setIsSignUpMode(prev => !prev);
+    setPassword('');
+    setConfirmPassword('');
+    setFormErrors({});
   };
 
   return (
@@ -44,128 +118,149 @@ export default function LoginView({ setActiveView }) {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      minHeight: 'calc(100vh - 90px)',
-      padding: '20px'
+      minHeight: 'calc(100vh - 110px)',
+      padding: '24px 20px'
     }}>
       <div style={{
         background: 'var(--card-bg)',
-        backdropFilter: 'blur(16px)',
+        backdropFilter: 'blur(20px)',
         border: '1px solid var(--card-border)',
         borderRadius: '24px',
         padding: '36px',
         width: '100%',
-        maxWidth: '420px',
-        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+        maxWidth: '440px',
+        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.45)',
         position: 'relative'
       }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 700, textAlign: 'center', color: '#fff' }}>
-          {isSignUpMode ? 'Create Account' : 'Welcome Back'}
-        </h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-sub)', fontSize: '0.9rem', marginBottom: '24px' }}>
-          {isSignUpMode ? 'Sign up to access Codeverse Weather Portal' : 'Login to access Weather DBMS'}
-        </p>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <input
-              type="text"
-              required
-              placeholder="Username"
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '14px 18px',
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid var(--card-border)',
-                borderRadius: '12px',
-                color: '#fff',
-                fontSize: '0.95rem'
-              }}
-            />
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{
+            fontSize: '2rem',
+            width: '60px',
+            height: '60px',
+            background: 'linear-gradient(135deg, #38bdf8, #818cf8)',
+            borderRadius: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 12px auto',
+            boxShadow: '0 8px 20px rgba(56, 189, 248, 0.3)'
+          }}>
+            🔐
           </div>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-main)' }}>
+            {isSignUpMode ? 'Create Account' : 'Welcome Back'}
+          </h2>
+          <p style={{ color: 'var(--text-sub)', fontSize: '0.88rem', marginTop: '4px' }}>
+            {isSignUpMode ? 'Sign up to access Desh Dekho' : 'Login to access'}
+          </p>
+        </div>
 
-          <div style={{ position: 'relative' }}>
-            <input
+        {/* Authentication Form */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <TextInput
+            label="Username"
+            name="username"
+            required
+            placeholder="Enter username"
+            value={username}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              if (formErrors.username) setFormErrors(prev => ({ ...prev, username: '' }));
+            }}
+            error={formErrors.username}
+            touched={Boolean(formErrors.username)}
+            icon="👤"
+            helperText="Minimum 3 characters"
+          />
+
+          <TextInput
+            label="Password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            required
+            placeholder="Enter password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              if (formErrors.password) setFormErrors(prev => ({ ...prev, password: '' }));
+            }}
+            error={formErrors.password}
+            touched={Boolean(formErrors.password)}
+            icon="🔑"
+            helperText="Minimum 6 characters"
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowPassword(prev => !prev)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-sub)',
+                  cursor: 'pointer',
+                  fontSize: '1.1rem'
+                }}
+              >
+                {showPassword ? '👁️' : '🙈'}
+              </button>
+            }
+          />
+
+          {isSignUpMode && (
+            <TextInput
+              label="Confirm Password"
+              name="confirmPassword"
               type={showPassword ? 'text' : 'password'}
               required
-              placeholder="Password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '14px 44px 14px 18px',
-                background: 'rgba(255, 255, 255, 0.06)',
-                border: '1px solid var(--card-border)',
-                borderRadius: '12px',
-                color: '#fff',
-                fontSize: '0.95rem'
+              placeholder="Confirm your password"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                if (formErrors.confirmPassword) setFormErrors(prev => ({ ...prev, confirmPassword: '' }));
               }}
+              error={formErrors.confirmPassword}
+              touched={Boolean(formErrors.confirmPassword)}
+              icon="🔒"
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(prev => !prev)}
-              style={{
-                position: 'absolute',
-                right: '14px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-sub)',
-                cursor: 'pointer',
-                fontSize: '1.1rem'
-              }}
-            >
-              {showPassword ? '👁️' : '🙈'}
-            </button>
-          </div>
+          )}
 
-          <button
+          <Button
             type="submit"
-            style={{
-              background: 'linear-gradient(135deg, #38bdf8, #6366f1)',
-              border: 'none',
-              color: '#fff',
-              padding: '14px',
-              borderRadius: '12px',
-              fontWeight: 700,
-              fontSize: '1rem',
-              marginTop: '8px',
-              boxShadow: '0 8px 20px rgba(56, 189, 248, 0.3)'
-            }}
+            variant="primary"
+            size="lg"
+            isLoading={isSubmitting}
+            style={{ marginTop: '8px' }}
           >
-            {isSignUpMode ? 'Sign Up' : 'Login'}
-          </button>
+            {isSignUpMode ? 'Create Account & Sign Up' : 'Login to Portal'}
+          </Button>
         </form>
 
-        {!isSignUpMode && (
-          <p
-            onClick={() => showToast('Default Credentials: Username: admin | Password: password', 'success')}
-            style={{
-              textAlign: 'center',
-              color: 'var(--accent-cyan)',
-              fontSize: '0.85rem',
-              marginTop: '16px',
-              cursor: 'pointer'
-            }}
-          >
-            Forgot Password? (Click for hint)
-          </p>
-        )}
+        {/* Quick Admin Fill & Reset Helpers */}
+        <div style={{
+          marginTop: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          alignItems: 'center'
+        }}>
+          {!isSignUpMode && (
+            <div style={{ display: 'flex', gap: '12px' }}>
+              
 
-        <p style={{ textAlign: 'center', color: 'var(--text-sub)', fontSize: '0.88rem', marginTop: '20px' }}>
-          {isSignUpMode ? 'Already have an account?' : "Don't have an account?"}{' '}
-          <span
-            onClick={() => {
-              setIsSignUpMode(prev => !prev);
-              setPassword('');
-            }}
-            style={{ color: 'var(--accent-cyan)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
-          >
-            {isSignUpMode ? 'Login' : 'Sign Up'}
-          </span>
-        </p>
+             
+            </div>
+          )}
+
+          <p style={{ textAlign: 'center', color: 'var(--text-sub)', fontSize: '0.88rem', marginTop: '12px' }}>
+            {isSignUpMode ? 'Already have an account?' : "Don't have an account?"}{' '}
+            <span
+              onClick={toggleMode}
+              style={{ color: 'var(--accent-cyan)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              {isSignUpMode ? 'Login' : 'Sign Up'}
+            </span>
+          </p>
+        </div>
       </div>
     </div>
   );

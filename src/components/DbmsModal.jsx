@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useWeather } from '../context/WeatherContext';
+import { useSelector, useDispatch } from 'react-redux';
+import { toggleFavorite, selectIsFavorite } from '../redux/favoritesSlice';
+import TextInput from './common/form/TextInput';
+import SelectInput from './common/form/SelectInput';
+import TextAreaInput from './common/form/TextAreaInput';
+import Button from './common/form/Button';
+import { useFormValidation } from '../hooks/useFormValidation';
 
 export default function DbmsModal() {
   const {
@@ -19,24 +26,68 @@ export default function DbmsModal() {
     showToast
   } = useWeather();
 
-  const [formName, setFormName] = useState('');
-  const [formState, setFormState] = useState('');
-  const [formLat, setFormLat] = useState('');
-  const [formLon, setFormLon] = useState('');
-  const [formCategory, setFormCategory] = useState('Custom Base');
-  const [formNotes, setFormNotes] = useState('');
-  const [autoCity, setAutoCity] = useState('');
+  const dispatch = useDispatch();
+  const favoriteIds = useSelector((state) => state.favorites.favoriteIds);
+
   const [editingId, setEditingId] = useState(null);
   const [tableSearch, setTableSearch] = useState('');
+  const [autoCity, setAutoCity] = useState('');
+  const [isGeocoding, setIsGeocoding] = useState(false);
+
+  // Form validation setup
+  const validationRules = {
+    name: [
+      { required: true, message: 'Location name is required.' },
+      { minLength: 2, message: 'Location name must be at least 2 characters.' }
+    ],
+    state: [
+      { required: true, message: 'State / Region is required.' }
+    ],
+    lat: [
+      { required: true, message: 'Latitude coordinate is required.' },
+      { isNumeric: true, message: 'Latitude must be a valid decimal number.' },
+      { min: -90, message: 'Latitude must be between -90 and 90.' },
+      { max: 90, message: 'Latitude must be between -90 and 90.' }
+    ],
+    lon: [
+      { required: true, message: 'Longitude coordinate is required.' },
+      { isNumeric: true, message: 'Longitude must be a valid decimal number.' },
+      { min: -180, message: 'Longitude must be between -180 and 180.' },
+      { max: 180, message: 'Longitude must be between -180 and 180.' }
+    ]
+  };
+
+  const initialFormState = {
+    name: '',
+    state: '',
+    lat: '',
+    lon: '',
+    category: 'Custom Base',
+    notes: ''
+  };
+
+  const {
+    values,
+    setValues,
+    errors,
+    touched,
+    isSubmitting,
+    setIsSubmitting,
+    handleChange,
+    handleBlur,
+    setFieldValue,
+    validateAll,
+    resetForm
+  } = useFormValidation(initialFormState, validationRules);
 
   // Update lat/lon when map picker captures coordinates
   useEffect(() => {
     if (pickedCoords) {
-      setFormLat(pickedCoords.lat);
-      setFormLon(pickedCoords.lon);
+      setFieldValue('lat', pickedCoords.lat);
+      setFieldValue('lon', pickedCoords.lon);
       setPickedCoords(null);
     }
-  }, [pickedCoords, setPickedCoords]);
+  }, [pickedCoords, setPickedCoords, setFieldValue]);
 
   if (!isDbmsModalOpen) return null;
 
@@ -45,26 +96,33 @@ export default function DbmsModal() {
       showToast('Please enter a city name to search.', 'error');
       return;
     }
-    const result = await geocodeCity(autoCity.trim());
-    if (result) {
-      setFormName(result.name);
-      setFormState(result.state || '');
-      setFormLat(result.lat);
-      setFormLon(result.lon);
-      showToast(`Auto-fetched coordinates for ${result.name}!`);
-    } else {
-      showToast(`Could not find coordinates for "${autoCity}".`, 'error');
+    setIsGeocoding(true);
+    try {
+      const result = await geocodeCity(autoCity.trim());
+      if (result) {
+        setFieldValue('name', result.name);
+        setFieldValue('state', result.state || '');
+        setFieldValue('lat', result.lat);
+        setFieldValue('lon', result.lon);
+        showToast(`Auto-fetched coordinates for ${result.name}!`, 'success');
+      } else {
+        showToast(`Could not find coordinates for "${autoCity}".`, 'error');
+      }
+    } finally {
+      setIsGeocoding(false);
     }
   };
 
   const handleStartEdit = (loc) => {
     setEditingId(loc.id);
-    setFormName(loc.name);
-    setFormState(loc.state || '');
-    setFormLat(loc.lat);
-    setFormLon(loc.lon);
-    setFormCategory(loc.category || 'Custom Base');
-    setFormNotes(loc.notes || '');
+    setValues({
+      name: loc.name || '',
+      state: loc.state || '',
+      lat: String(loc.lat),
+      lon: String(loc.lon),
+      category: loc.category || 'Custom Base',
+      notes: loc.notes || ''
+    });
   };
 
   const handleCancelEdit = () => {
@@ -72,40 +130,36 @@ export default function DbmsModal() {
     resetForm();
   };
 
-  const resetForm = () => {
-    setFormName('');
-    setFormState('');
-    setFormLat('');
-    setFormLon('');
-    setFormCategory('Custom Base');
-    setFormNotes('');
-    setAutoCity('');
-  };
-
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!formName.trim() || formLat === '' || formLon === '') {
-      showToast('Name, Latitude, and Longitude are required.', 'error');
+    const isValid = validateAll();
+    if (!isValid) {
+      showToast('Please fix the highlighted validation errors.', 'error');
       return;
     }
 
-    const payload = {
-      name: formName.trim(),
-      state: formState.trim(),
-      lat: parseFloat(formLat),
-      lon: parseFloat(formLon),
-      category: formCategory,
-      notes: formNotes.trim()
-    };
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        name: values.name.trim(),
+        state: values.state.trim(),
+        lat: parseFloat(values.lat),
+        lon: parseFloat(values.lon),
+        category: values.category,
+        notes: values.notes.trim()
+      };
 
-    if (editingId) {
-      await updateLocation(editingId, payload);
-      setEditingId(null);
-    } else {
-      await addLocation(payload);
+      if (editingId) {
+        await updateLocation(editingId, payload);
+        setEditingId(null);
+      } else {
+        await addLocation(payload);
+      }
+
+      resetForm();
+    } finally {
+      setIsSubmitting(false);
     }
-
-    resetForm();
   };
 
   const handleTriggerMapPicker = () => {
@@ -136,6 +190,16 @@ export default function DbmsModal() {
     (l.category && l.category.toLowerCase().includes(tableSearch.toLowerCase()))
   );
 
+  const categoryOptions = [
+    { value: 'Custom Base', label: 'Custom Base' },
+    { value: 'Capital', label: 'Capital' },
+    { value: 'IT Hub', label: 'IT Hub' },
+    { value: 'Coastal', label: 'Coastal' },
+    { value: 'Hill Station', label: 'Hill Station' },
+    { value: 'Tourist Spot', label: 'Tourist Spot' },
+    { value: 'Heritage', label: 'Heritage' }
+  ];
+
   return (
     <div style={{
       position: 'fixed',
@@ -149,11 +213,11 @@ export default function DbmsModal() {
       padding: '20px'
     }}>
       <div style={{
-        background: '#0f172a',
+        background: 'var(--modal-bg)',
         border: '1px solid var(--card-border)',
         borderRadius: '24px',
         width: '100%',
-        maxWidth: '950px',
+        maxWidth: '960px',
         maxHeight: '90vh',
         display: 'flex',
         flexDirection: 'column',
@@ -162,40 +226,40 @@ export default function DbmsModal() {
       }}>
         {/* Modal Header */}
         <div style={{
-          padding: '20px 28px',
+          padding: '20px 24px',
           borderBottom: '1px solid var(--card-border)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: 'rgba(255, 255, 255, 0.02)'
+          flexWrap: 'wrap',
+          gap: '12px'
         }}>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
-            🗄️ Location Database Management System (DBMS)
-          </h2>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                🗄️ Location Database Manager
+              </h2>
+              
+            </div>
+           
+          </div>
+
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <button
-              onClick={exportToJson}
-              style={{
-                background: 'rgba(255, 255, 255, 0.08)',
-                border: '1px solid var(--card-border)',
-                color: '#fff',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                fontSize: '0.78rem',
-                fontWeight: 600
-              }}
-            >
-              📥 Export JSON
-            </button>
+            <Button size="sm" variant="secondary" onClick={exportToJson} icon="📥">
+              Export JSON
+            </Button>
             <label style={{
               background: 'rgba(255, 255, 255, 0.08)',
               border: '1px solid var(--card-border)',
-              color: '#fff',
+              color: 'var(--text-main)',
               padding: '6px 12px',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              fontSize: '0.82rem',
               fontWeight: 600,
-              cursor: 'pointer'
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
             }}>
               📤 Import JSON
               <input type="file" accept=".json" onChange={handleFileUpload} style={{ display: 'none' }} />
@@ -205,11 +269,12 @@ export default function DbmsModal() {
               style={{
                 background: 'rgba(255, 255, 255, 0.1)',
                 border: 'none',
-                color: '#fff',
+                color: 'var(--text-main)',
                 width: '32px',
                 height: '32px',
                 borderRadius: '50%',
-                fontSize: '1.1rem'
+                fontSize: '1.1rem',
+                cursor: 'pointer'
               }}
             >
               &times;
@@ -220,258 +285,199 @@ export default function DbmsModal() {
         {/* Modal Body */}
         <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {/* Form Section */}
+          {/* Reusable Form Section */}
           <form onSubmit={handleSave} style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(2, 1fr)',
             gap: '16px',
-            background: 'rgba(255, 255, 255, 0.03)',
+            background: 'var(--card-bg)',
             padding: '20px',
             borderRadius: '16px',
             border: '1px solid var(--card-border)'
           }}>
-            <h3 style={{ gridColumn: 'span 2', fontSize: '1.05rem', color: '#fff' }}>
-              {editingId ? '✏️ Edit Location Record' : '➕ Add New Custom Location Record'}
-            </h3>
+            <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '1.05rem', color: 'var(--text-main)', fontWeight: 600 }}>
+                {editingId ? '✏️ Edit Location Record' : '➕ Add New Custom Location Record'}
+              </h3>
+              <span style={{ fontSize: '0.78rem', color: 'var(--accent-orange)' }}>
+                * Required Fields
+              </span>
+            </div>
 
             {/* Auto Geocode Input */}
             <div style={{
               gridColumn: 'span 2',
-              background: 'rgba(255, 255, 255, 0.03)',
-              padding: '10px',
-              borderRadius: '10px',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: 'rgba(56, 189, 248, 0.05)',
+              padding: '12px',
+              borderRadius: '12px',
+              border: '1px solid rgba(56, 189, 248, 0.2)',
               display: 'flex',
               flexDirection: 'column',
-              gap: '6px'
+              gap: '8px'
             }}>
-              <label style={{ fontSize: '0.82rem', color: 'var(--accent-cyan)', fontWeight: 500 }}>
-                🔍 Auto-Fetch Coordinates by City Name
+              <label style={{ fontSize: '0.84rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>
+                🔍 Auto-Fetch Coordinates by City Name (OpenWeather Geocoding)
               </label>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <input
                   type="text"
-                  placeholder="Type any city (e.g. Manali, London, Tokyo)..."
+                  placeholder="Type any city (e.g. Manali, London, Tokyo, Paris)..."
                   value={autoCity}
                   onChange={e => setAutoCity(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAutoGeocode(); } }}
                   style={{
                     flex: 1,
-                    background: 'rgba(255, 255, 255, 0.06)',
-                    border: '1px solid var(--card-border)',
+                    background: 'var(--input-bg)',
+                    border: '1px solid var(--input-border)',
                     borderRadius: '10px',
                     padding: '10px 14px',
-                    color: '#fff',
+                    color: 'var(--text-main)',
                     fontSize: '0.9rem'
                   }}
                 />
-                <button
-                  type="button"
+                <Button
+                  size="sm"
                   onClick={handleAutoGeocode}
-                  style={{
-                    background: 'var(--accent-cyan)',
-                    color: '#000',
-                    border: 'none',
-                    padding: '8px 14px',
-                    borderRadius: '8px',
-                    fontWeight: 600
-                  }}
+                  isLoading={isGeocoding}
                 >
                   Find Coords
-                </button>
+                </Button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-sub)' }}>Location / City Name *</label>
-              <input
-                type="text"
-                required
-                placeholder="e.g. Manali, Cochin Port"
-                value={formName}
-                onChange={e => setFormName(e.target.value)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid var(--card-border)',
-                  borderRadius: '10px',
-                  padding: '10px 14px',
-                  color: '#fff',
-                  fontSize: '0.9rem'
-                }}
-              />
-            </div>
+            {/* Reusable Form Inputs */}
+            <TextInput
+              label="Location / City Name"
+              name="name"
+              required
+              placeholder="e.g. Manali, Cochin Port"
+              value={values.name}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.name}
+              touched={touched.name}
+              icon="🏙️"
+            />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-sub)' }}>State / Region</label>
-              <input
-                type="text"
-                placeholder="e.g. Himachal Pradesh"
-                value={formState}
-                onChange={e => setFormState(e.target.value)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid var(--card-border)',
-                  borderRadius: '10px',
-                  padding: '10px 14px',
-                  color: '#fff',
-                  fontSize: '0.9rem'
-                }}
-              />
-            </div>
+            <TextInput
+              label="State / Region"
+              name="state"
+              required
+              placeholder="e.g. Himachal Pradesh"
+              value={values.state}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.state}
+              touched={touched.state}
+              icon="📍"
+            />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-sub)' }}>Latitude *</label>
-              <input
-                type="number"
-                step="any"
-                required
-                placeholder="e.g. 32.2432"
-                value={formLat}
-                onChange={e => setFormLat(e.target.value)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid var(--card-border)',
-                  borderRadius: '10px',
-                  padding: '10px 14px',
-                  color: '#fff',
-                  fontSize: '0.9rem'
-                }}
-              />
-            </div>
+            <TextInput
+              label="Latitude"
+              name="lat"
+              type="number"
+              step="any"
+              required
+              placeholder="e.g. 32.2432 (-90 to 90)"
+              value={values.lat}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.lat}
+              touched={touched.lat}
+              icon="🌐"
+              helperText="Valid latitude: -90.0 to 90.0"
+            />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-sub)' }}>Longitude *</label>
-              <input
-                type="number"
-                step="any"
-                required
-                placeholder="e.g. 77.1892"
-                value={formLon}
-                onChange={e => setFormLon(e.target.value)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid var(--card-border)',
-                  borderRadius: '10px',
-                  padding: '10px 14px',
-                  color: '#fff',
-                  fontSize: '0.9rem'
-                }}
-              />
-            </div>
+            <TextInput
+              label="Longitude"
+              name="lon"
+              type="number"
+              step="any"
+              required
+              placeholder="e.g. 77.1892 (-180 to 180)"
+              value={values.lon}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={errors.lon}
+              touched={touched.lon}
+              icon="🌐"
+              helperText="Valid longitude: -180.0 to 180.0"
+            />
 
             <div style={{ gridColumn: 'span 2' }}>
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleTriggerMapPicker}
-                style={{
-                  background: 'rgba(255, 112, 67, 0.15)',
-                  border: '1px solid rgba(255, 112, 67, 0.4)',
-                  color: 'var(--accent-orange)',
-                  padding: '8px 14px',
-                  borderRadius: '10px',
-                  fontSize: '0.8rem',
-                  fontWeight: 600
-                }}
+                icon="📍"
               >
-                📍 Pick Coordinates from Map Click
-              </button>
+                Pick Coordinates Directly from Map Click
+              </Button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-sub)' }}>Category</label>
-              <select
-                value={formCategory}
-                onChange={e => setFormCategory(e.target.value)}
-                style={{
-                  background: '#1e293b',
-                  border: '1px solid var(--card-border)',
-                  borderRadius: '10px',
-                  padding: '10px 14px',
-                  color: '#fff',
-                  fontSize: '0.9rem'
-                }}
+            <SelectInput
+              label="Category"
+              name="category"
+              value={values.category}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              options={categoryOptions}
+              icon="🏷️"
+            />
+
+            <TextInput
+              label="Short Notes / Description"
+              name="notes"
+              placeholder="e.g. Mountain valley, major port, high-altitude outpost..."
+              value={values.notes}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              icon="📝"
+            />
+
+            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '10px', marginTop: '8px' }}>
+              <Button
+                type="submit"
+                variant={editingId ? 'secondary' : 'success'}
+                isLoading={isSubmitting}
+                style={{ flex: 1 }}
+                icon="💾"
               >
-                <option value="Custom Base">Custom Base</option>
-                <option value="Tourist Spot">Tourist Spot</option>
-                <option value="Hill Station">Hill Station</option>
-                <option value="Coastal">Coastal</option>
-                <option value="IT Hub">IT Hub</option>
-                <option value="Capital">Capital</option>
-              </select>
+                {editingId ? 'Update Location Record' : 'Save Location to Database'}
+              </Button>
+
+              {editingId && (
+                <Button
+                  type="button"
+                  variant="danger"
+                  onClick={handleCancelEdit}
+                  icon="✖️"
+                >
+                  Cancel Edit
+                </Button>
+              )}
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.82rem', color: 'var(--text-sub)' }}>Description / Notes</label>
-              <input
-                type="text"
-                placeholder="Optional telemetry notes..."
-                value={formNotes}
-                onChange={e => setFormNotes(e.target.value)}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid var(--card-border)',
-                  borderRadius: '10px',
-                  padding: '10px 14px',
-                  color: '#fff',
-                  fontSize: '0.9rem'
-                }}
-              />
-            </div>
-
-            <button
-              type="submit"
-              style={{
-                gridColumn: 'span 2',
-                background: editingId ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'linear-gradient(135deg, #10b981, #059669)',
-                border: 'none',
-                color: 'white',
-                padding: '12px',
-                borderRadius: '12px',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                marginTop: '8px'
-              }}
-            >
-              {editingId ? '💾 Update Location Record' : '💾 Save Location to Database'}
-            </button>
-
-            {editingId && (
-              <button
-                type="button"
-                onClick={handleCancelEdit}
-                style={{
-                  gridColumn: 'span 2',
-                  background: 'rgba(239, 68, 68, 0.2)',
-                  border: '1px solid rgba(239, 68, 68, 0.4)',
-                  color: '#fca5a5',
-                  padding: '8px',
-                  borderRadius: '10px',
-                  fontWeight: 600
-                }}
-              >
-                ✖️ Cancel Editing
-              </button>
-            )}
           </form>
 
           {/* Database Table Section */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h3 style={{ fontSize: '1.05rem', color: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+              <h3 style={{ fontSize: '1.05rem', color: 'var(--text-main)', fontWeight: 600 }}>
                 📊 Stored Location Records ({filteredLocations.length})
               </h3>
               <input
                 type="text"
-                placeholder="Filter table records..."
+                placeholder="Search table records..."
                 value={tableSearch}
                 onChange={e => setTableSearch(e.target.value)}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid var(--card-border)',
-                  borderRadius: '8px',
-                  padding: '6px 12px',
-                  color: '#fff',
+                  background: 'var(--input-bg)',
+                  border: '1px solid var(--input-border)',
+                  borderRadius: '10px',
+                  padding: '8px 14px',
+                  color: 'var(--text-main)',
                   fontSize: '0.85rem',
-                  width: '220px'
+                  width: '240px'
                 }}
               />
             </div>
@@ -480,6 +486,7 @@ export default function DbmsModal() {
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
                 <thead>
                   <tr style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-sub)', borderBottom: '1px solid var(--card-border)' }}>
+                    <th style={{ padding: '12px 16px' }}>Fav </th>
                     <th style={{ padding: '12px 16px' }}>Name</th>
                     <th style={{ padding: '12px 16px' }}>State</th>
                     <th style={{ padding: '12px 16px' }}>Category</th>
@@ -488,66 +495,91 @@ export default function DbmsModal() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredLocations.map(loc => (
-                    <tr key={loc.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                      <td style={{ padding: '12px 16px', fontWeight: 600, color: '#fff' }}>{loc.name}</td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text-sub)' }}>{loc.state || '-'}</td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.15)', color: 'var(--accent-cyan)' }}>
-                          {loc.category || 'Base'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-sub)' }}>
-                        {parseFloat(loc.lat).toFixed(2)}, {parseFloat(loc.lon).toFixed(2)}
-                      </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <button
-                          onClick={() => {
-                            selectLocation(loc);
-                            setIsDbmsModalOpen(false);
-                          }}
-                          style={{
-                            background: 'rgba(56, 189, 248, 0.15)',
-                            border: '1px solid rgba(56, 189, 248, 0.4)',
-                            color: 'var(--accent-cyan)',
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            fontSize: '0.75rem',
-                            marginRight: '6px'
-                          }}
-                        >
-                          Load
-                        </button>
-                        <button
-                          onClick={() => handleStartEdit(loc)}
-                          style={{
-                            background: 'rgba(251, 191, 36, 0.15)',
-                            border: '1px solid rgba(251, 191, 36, 0.4)',
-                            color: 'var(--accent-amber)',
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            fontSize: '0.75rem',
-                            marginRight: '6px'
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => deleteLocation(loc.id)}
-                          style={{
-                            background: 'rgba(239, 68, 68, 0.15)',
-                            border: '1px solid rgba(239, 68, 68, 0.4)',
-                            color: '#fca5a5',
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            fontSize: '0.75rem'
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredLocations.map(loc => {
+                    const isFav = favoriteIds.includes(String(loc.id));
+                    return (
+                      <tr key={loc.id} style={{ borderBottom: '1px solid var(--card-border)' }}>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              dispatch(toggleFavorite(loc.id));
+                              showToast(isFav ? `Removed ${loc.name} from Redux Favorites` : `Added ${loc.name} to Redux Favorites!`);
+                            }}
+                            title={isFav ? 'Remove from Favorites' : 'Add to Favorites'}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              fontSize: '1.2rem',
+                              padding: '2px 6px'
+                            }}
+                          >
+                            {isFav ? '❤️' : '🤍'}
+                          </button>
+                        </td>
+                        <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-main)' }}>{loc.name}</td>
+                        <td style={{ padding: '12px 16px', color: 'var(--text-sub)' }}>{loc.state || '-'}</td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '10px', background: 'var(--badge-bg)', color: 'var(--accent-cyan)' }}>
+                            {loc.category || 'Base'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--text-sub)' }}>
+                          {parseFloat(loc.lat).toFixed(2)}, {parseFloat(loc.lon).toFixed(2)}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <button
+                            onClick={() => {
+                              selectLocation(loc);
+                              setIsDbmsModalOpen(false);
+                            }}
+                            style={{
+                              background: 'rgba(56, 189, 248, 0.15)',
+                              border: '1px solid rgba(56, 189, 248, 0.4)',
+                              color: 'var(--accent-cyan)',
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              fontSize: '0.75rem',
+                              marginRight: '6px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Load
+                          </button>
+                          <button
+                            onClick={() => handleStartEdit(loc)}
+                            style={{
+                              background: 'rgba(251, 191, 36, 0.15)',
+                              border: '1px solid rgba(251, 191, 36, 0.4)',
+                              color: 'var(--accent-amber)',
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              fontSize: '0.75rem',
+                              marginRight: '6px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteLocation(loc.id)}
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              border: '1px solid rgba(239, 68, 68, 0.4)',
+                              color: '#fca5a5',
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              fontSize: '0.75rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

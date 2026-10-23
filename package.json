@@ -11,10 +11,13 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.13.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.475.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-redux": "^9.3.0",
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@types/leaflet": "^1.9.16",

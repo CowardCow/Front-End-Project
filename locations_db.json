@@ -1,5 +1,14 @@
 [
   {
+    "name": "New Delhi",
+    "state": "IN",
+    "lat": 28.6128,
+    "lon": 77.2311,
+    "category": "Quick Search",
+    "notes": "Captured via Quick Search (scattered clouds)",
+    "id": "1792048688574"
+  },
+  {
     "id": "1",
     "name": "Amaravati Capital",
     "state": "Andhra Pradesh",
